@@ -51,10 +51,17 @@ export default function LoginPage() {
       <Button type="submit" disabled={loading}>
         {loading ? 'Logging in...' : 'Log in'}
       </Button>
-      <p className="text-xs text-zinc-500 text-center">
-        No account yet?{' '}
-        <a href="/auth/signup" className="text-amber-400 hover:text-amber-300">Sign up</a>
-      </p>
+      <div className="flex flex-col gap-1 text-xs text-zinc-500 text-center">
+        <p>
+          <a href="/auth/forgot-password" className="text-amber-400 hover:text-amber-300">
+            Forgot password?
+          </a>
+        </p>
+        <p>
+          No account yet?{' '}
+          <a href="/auth/signup" className="text-amber-400 hover:text-amber-300">Sign up</a>
+        </p>
+      </div>
     </form>
   )
 }
