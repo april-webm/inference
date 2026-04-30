@@ -35,7 +35,7 @@ export default async function LandingPage() {
             Inference
           </h1>
           <p className="text-zinc-400 text-lg">
-            Three problems. Three months. No code required.
+            Three problems. Three weeks.
           </p>
         </header>
 
@@ -84,8 +84,9 @@ export default async function LandingPage() {
                 </div>
               </div>
             )
-            return round.is_active ? (
-              <a key={round.id} href="/dashboard" className="block hover:opacity-90 transition-opacity">
+            const isViewable = status !== 'upcoming'
+            return isViewable ? (
+              <a key={round.id} href={`/rounds/${round.number}`} className="block hover:opacity-90 transition-opacity">
                 {card}
               </a>
             ) : (

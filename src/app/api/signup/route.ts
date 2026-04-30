@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { validateDisplayName } from '@/lib/moderation'
+import { isAllowedEmailDomain } from '@/lib/email'
 
 export async function POST(request: Request) {
   let body: { email?: unknown; password?: unknown; displayName?: unknown }
@@ -21,6 +22,13 @@ export async function POST(request: Request) {
 
   if (password.length < 8) {
     return NextResponse.json({ error: 'Password must be at least 8 characters.' }, { status: 400 })
+  }
+
+  if (!isAllowedEmailDomain(email)) {
+    return NextResponse.json(
+      { error: 'Please use a university or major provider email (Gmail, Outlook, iCloud, Proton, etc.).' },
+      { status: 400 },
+    )
   }
 
   const nameCheck = validateDisplayName(displayName)

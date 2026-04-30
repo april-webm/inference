@@ -65,6 +65,7 @@ export default function SignupPage() {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         required
+        hint="University or major provider (Gmail, Outlook, iCloud, Proton)."
       />
       <Input
         id="password"

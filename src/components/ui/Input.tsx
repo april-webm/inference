@@ -3,9 +3,10 @@ import { InputHTMLAttributes } from 'react'
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string
   error?: string
+  hint?: string
 }
 
-export function Input({ label, error, id, ...props }: InputProps) {
+export function Input({ label, error, hint, id, ...props }: InputProps) {
   return (
     <div className="flex flex-col gap-1">
       <label htmlFor={id} className="text-sm text-zinc-400">{label}</label>
@@ -14,6 +15,7 @@ export function Input({ label, error, id, ...props }: InputProps) {
         className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-amber-400 transition-colors"
         {...props}
       />
+      {hint && <p className="text-xs text-zinc-500">{hint}</p>}
       {error && <p className="text-xs text-red-400">{error}</p>}
     </div>
   )
