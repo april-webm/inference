@@ -80,6 +80,13 @@ export default async function DashboardPage() {
     .eq('user_id', user!.id)
     .maybeSingle<Submission>()
 
+  const { count: attemptsUsed } = await supabase
+    .from('submission_attempts')
+    .select('id', { count: 'exact', head: true })
+    .eq('round_id', round.id)
+    .eq('user_id', user!.id)
+  const submissionsRemaining = Math.max(0, 3 - (attemptsUsed ?? 0))
+
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-2">
@@ -121,6 +128,7 @@ export default async function DashboardPage() {
         closesAt={round.closes_at}
         existingAnswer={existing?.answer ?? null}
         existingReasoning={existing?.reasoning ?? null}
+        submissionsRemaining={submissionsRemaining}
       />
 
       {existing && (

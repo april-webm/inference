@@ -9,6 +9,7 @@ interface SubmissionFormProps {
   closesAt: string
   existingAnswer?: Record<string, unknown> | null
   existingReasoning?: string | null
+  submissionsRemaining: number
 }
 
 export function SubmissionForm({
@@ -16,8 +17,10 @@ export function SubmissionForm({
   closesAt,
   existingAnswer,
   existingReasoning,
+  submissionsRemaining,
 }: SubmissionFormProps) {
   const isClosed = new Date(closesAt) <= new Date()
+  const noneLeft = submissionsRemaining <= 0
 
   const [answerText, setAnswerText] = useState(
     existingAnswer ? JSON.stringify(existingAnswer, null, 2) : ''
@@ -30,6 +33,14 @@ export function SubmissionForm({
     return (
       <div className="border border-zinc-800 bg-zinc-900 rounded-lg p-4 text-sm text-zinc-400">
         Submissions for this round are now closed.
+      </div>
+    )
+  }
+
+  if (noneLeft) {
+    return (
+      <div className="border border-zinc-800 bg-zinc-900 rounded-lg p-4 text-sm text-zinc-400">
+        You have used all 3 submissions for this round. Your latest one above is the one we will score.
       </div>
     )
   }
@@ -101,8 +112,11 @@ export function SubmissionForm({
         required
       />
       <p className="text-xs text-zinc-500 -mt-2">{reasoning.length} / 50 minimum</p>
-      <div>
+      <div className="flex items-center gap-3">
         <Button type="submit" disabled={status === 'loading'}>{buttonLabel}</Button>
+        <p className="text-xs text-zinc-500">
+          {submissionsRemaining} of 3 submissions left this round
+        </p>
       </div>
       {status === 'success' && (
         <p className="text-xs text-emerald-400">Submission recorded.</p>

@@ -102,7 +102,6 @@ export default async function LeaderboardPage() {
                             </td>
                             <td className="py-2 px-4 text-zinc-100">
                               {row.display_name}
-                              {row.university_email && <span className="ml-2" title="University email">🎓</span>}
                             </td>
                             <td className="text-right font-mono py-2 px-4 text-zinc-300">
                               {row.score.toFixed(4)}

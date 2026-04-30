@@ -51,21 +51,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Round is closed.' }, { status: 400 })
   }
 
-  const startOfUtcDay = new Date()
-  startOfUtcDay.setUTCHours(0, 0, 0, 0)
-
   const { count: attemptCount, error: attemptErr } = await service
     .from('submission_attempts')
     .select('id', { count: 'exact', head: true })
     .eq('user_id', user.id)
     .eq('round_id', roundId)
-    .gte('attempted_at', startOfUtcDay.toISOString())
   if (attemptErr) {
     return NextResponse.json({ error: 'Rate limit lookup failed.' }, { status: 500 })
   }
-  if ((attemptCount ?? 0) >= 5) {
+  if ((attemptCount ?? 0) >= 3) {
     return NextResponse.json(
-      { error: 'Daily submission limit reached (5 per day).' },
+      { error: 'You have used all 3 submissions for this round.' },
       { status: 429 }
     )
   }
