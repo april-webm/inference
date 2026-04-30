@@ -1,6 +1,6 @@
-import ReactMarkdown from 'react-markdown'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { Badge } from '@/components/ui/Badge'
+import { Markdown } from '@/components/Markdown'
 import { SubmissionForm } from '@/components/SubmissionForm'
 import type { Round, Submission } from '@/types/database'
 
@@ -19,13 +19,50 @@ export default async function DashboardPage() {
   const supabase = await createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const { data: round } = await supabase
+  const nowIso = new Date().toISOString()
+
+  const { data: liveRound } = await supabase
     .from('rounds')
     .select('*')
     .eq('is_active', true)
+    .lte('opens_at', nowIso)
+    .gt('closes_at', nowIso)
+    .order('number', { ascending: true })
+    .limit(1)
     .maybeSingle<Round>()
 
+  const round: Round | null = liveRound ?? null
+
   if (!round) {
+    const { data: upcoming } = await supabase
+      .from('rounds')
+      .select('*')
+      .gt('opens_at', nowIso)
+      .order('opens_at', { ascending: true })
+      .limit(1)
+      .maybeSingle<Round>()
+
+    if (upcoming) {
+      return (
+        <div className="flex flex-col gap-4">
+          <p className="font-mono text-xs text-zinc-500">
+            Round {String(upcoming.number).padStart(2, '0')}
+          </p>
+          <h1 className="text-2xl font-medium text-zinc-100">{upcoming.title}</h1>
+          <div className="flex items-center gap-3 text-xs text-zinc-500">
+            <Badge variant={upcoming.difficulty}>{upcoming.difficulty}</Badge>
+            <Badge variant="upcoming">upcoming</Badge>
+          </div>
+          <p className="text-sm text-zinc-400 mt-2">
+            Opens {formatDate(upcoming.opens_at)} UTC.
+          </p>
+          <p className="text-xs text-zinc-500">
+            The problem statement will appear here when the round opens.
+          </p>
+        </div>
+      )
+    }
+
     return (
       <div className="text-zinc-400 text-sm">
         <p>No active round right now.</p>
@@ -58,9 +95,7 @@ export default async function DashboardPage() {
 
       <hr className="border-zinc-800" />
 
-      <article className="prose prose-invert prose-zinc max-w-none">
-        <ReactMarkdown>{round.description}</ReactMarkdown>
-      </article>
+      <Markdown>{round.description}</Markdown>
 
       <hr className="border-zinc-800" />
 
