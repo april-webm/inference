@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 
@@ -17,20 +16,31 @@ export default function SignupPage() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+
     if (password.length < 8) {
       setError('Password must be at least 8 characters.')
       return
     }
+
     setLoading(true)
-    const supabase = createSupabaseBrowserClient()
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { display_name: displayName } },
-    })
+    let res: Response
+    try {
+      res = await fetch('/api/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, displayName }),
+      })
+    } catch {
+      setLoading(false)
+      setError('Network error. Try again.')
+      return
+    }
+
+    const json = await res.json().catch(() => ({}))
     setLoading(false)
-    if (error) {
-      setError(error.message)
+
+    if (!res.ok) {
+      setError(json.error ?? 'Signup failed.')
       return
     }
     router.push('/auth/check-email')
@@ -44,6 +54,8 @@ export default function SignupPage() {
         label="Display name"
         value={displayName}
         onChange={(e) => setDisplayName(e.target.value)}
+        minLength={2}
+        maxLength={40}
         required
       />
       <Input
