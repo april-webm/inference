@@ -32,7 +32,7 @@ export default function RootLayout({
             rel="noopener noreferrer"
             className="hover:text-zinc-400 transition-colors underline-offset-4 hover:underline"
           >
-            Buy me a coffee
+            Support
           </a>
           .
         </footer>
