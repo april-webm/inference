@@ -34,7 +34,7 @@ export default function RootLayout({
           >
             Support
           </a>
-          .
+          <span aria-hidden="true" className="ml-1">♥</span>
         </footer>
       </body>
     </html>
