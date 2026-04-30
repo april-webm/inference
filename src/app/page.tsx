@@ -1,5 +1,6 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { Badge } from '@/components/ui/Badge'
+import { PublicNav } from '@/components/PublicNav'
 import type { Round } from '@/types/database'
 
 export const dynamic = 'force-dynamic'
@@ -26,8 +27,9 @@ export default async function LandingPage() {
     .returns<Round[]>()
 
   return (
-    <div className="min-h-screen flex flex-col items-center px-6 py-20">
-      <div className="w-full max-w-2xl flex flex-col gap-10">
+    <div className="min-h-screen">
+      <PublicNav />
+      <main className="max-w-2xl mx-auto px-6 py-16 flex flex-col gap-10">
         <header className="flex flex-col gap-3">
           <h1 className="font-mono text-4xl font-bold text-amber-400 tracking-tight">
             Inference
@@ -97,7 +99,7 @@ export default async function LandingPage() {
         <p className="text-xs text-zinc-600 text-center">
           Made for students who want to think seriously about markets.
         </p>
-      </div>
+      </main>
     </div>
   )
 }

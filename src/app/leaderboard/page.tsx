@@ -1,5 +1,6 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { Badge } from '@/components/ui/Badge'
+import { PublicNav } from '@/components/PublicNav'
 import type { LeaderboardRow, Round } from '@/types/database'
 
 export const dynamic = 'force-dynamic'
@@ -21,7 +22,6 @@ function rankBorder(rank: number): string {
 
 export default async function LeaderboardPage() {
   const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
 
   const nowIso = new Date().toISOString()
   const { data: closedRounds } = await supabase
@@ -46,22 +46,7 @@ export default async function LeaderboardPage() {
 
   return (
     <div className="min-h-screen">
-      <nav className="border-b border-zinc-800 px-6 py-4 flex items-center justify-between max-w-4xl mx-auto">
-        <a href="/" className="font-mono font-bold text-amber-400 tracking-tight">
-          Inference
-        </a>
-        <div className="flex items-center gap-6 text-sm">
-          {user ? (
-            <a href="/dashboard" className="text-zinc-400 hover:text-zinc-100 transition-colors">
-              Dashboard
-            </a>
-          ) : (
-            <a href="/auth/login" className="text-zinc-400 hover:text-zinc-100 transition-colors">
-              Sign in
-            </a>
-          )}
-        </div>
-      </nav>
+      <PublicNav />
       <main className="max-w-4xl mx-auto px-6 py-10 flex flex-col gap-12">
         {!closedRounds || closedRounds.length === 0 ? (
           <p className="text-sm text-zinc-400">
