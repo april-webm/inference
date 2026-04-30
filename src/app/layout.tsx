@@ -22,8 +22,20 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
-      <body className="bg-[#0a0a0a] text-zinc-100 antialiased min-h-screen">
-        {children}
+      <body className="bg-[#0a0a0a] text-zinc-100 antialiased min-h-screen flex flex-col">
+        <div className="flex-1">{children}</div>
+        <footer className="px-6 py-6 text-center text-xs text-zinc-600">
+          Built by April.{' '}
+          <a
+            href="https://ko-fi.com/aprilwebm"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-zinc-400 transition-colors underline-offset-4 hover:underline"
+          >
+            Buy me a coffee
+          </a>
+          .
+        </footer>
       </body>
     </html>
   )
