@@ -18,6 +18,7 @@ function statusFor(round: Round): Status {
 
 export default async function LandingPage() {
   const supabase = await createSupabaseServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
   const { data: rounds } = await supabase
     .from('rounds')
     .select('*')
@@ -37,12 +38,30 @@ export default async function LandingPage() {
         </header>
 
         <div className="flex items-center gap-3">
-          <a href="/auth/signup" className="bg-amber-400 text-zinc-900 hover:bg-amber-300 px-4 py-2 rounded text-sm font-medium transition-colors">
-            Sign up
-          </a>
-          <a href="/auth/login" className="bg-zinc-800 text-zinc-100 hover:bg-zinc-700 border border-zinc-700 px-4 py-2 rounded text-sm font-medium transition-colors">
-            Log in
-          </a>
+          {user ? (
+            <>
+              <a href="/dashboard" className="bg-amber-400 text-zinc-900 hover:bg-amber-300 px-4 py-2 rounded text-sm font-medium transition-colors">
+                Dashboard
+              </a>
+              <a href="/leaderboard" className="bg-zinc-800 text-zinc-100 hover:bg-zinc-700 border border-zinc-700 px-4 py-2 rounded text-sm font-medium transition-colors">
+                Leaderboard
+              </a>
+              <form action="/auth/signout" method="POST">
+                <button type="submit" className="text-sm text-zinc-400 hover:text-zinc-100 transition-colors px-2">
+                  Sign out
+                </button>
+              </form>
+            </>
+          ) : (
+            <>
+              <a href="/auth/signup" className="bg-amber-400 text-zinc-900 hover:bg-amber-300 px-4 py-2 rounded text-sm font-medium transition-colors">
+                Sign up
+              </a>
+              <a href="/auth/login" className="bg-zinc-800 text-zinc-100 hover:bg-zinc-700 border border-zinc-700 px-4 py-2 rounded text-sm font-medium transition-colors">
+                Log in
+              </a>
+            </>
+          )}
         </div>
 
         <hr className="border-zinc-800" />
