@@ -10,13 +10,13 @@ export default function AboutPage() {
         <section className="flex flex-col gap-3">
           <h1 className="text-2xl font-medium text-zinc-100">About Inference</h1>
           <p className="text-sm text-zinc-300 leading-relaxed">
-            Inference is a small monthly competition for people who like
-            thinking carefully about uncertainty. Three problems, three months,
-            no code required. Each round we put up a question pulled from the
-            kind of reasoning that shows up in trading, gambling, and
-            statistics. You read the problem, work out an answer, write a
-            short explanation, and submit. Once the round closes we score
-            everyone and post a leaderboard.
+            Inference is a short competition for people who like thinking
+            carefully about uncertainty. Three problems, three weeks, no code
+            required. Each round we put up a question pulled from the kind of
+            reasoning that shows up in trading, gambling, and statistics. You
+            read the problem, work out an answer, write a short explanation,
+            and submit. Once the round closes we score everyone and post a
+            leaderboard.
           </p>
           <p className="text-sm text-zinc-300 leading-relaxed">
             The whole thing runs on the honour system. Submit what you reckon
@@ -90,6 +90,21 @@ export default function AboutPage() {
               private to you and to whoever is scoring.
             </p>
           </div>
+        </section>
+
+        <section className="flex flex-col gap-3">
+          <h2 className="text-lg font-medium text-zinc-100">Issues</h2>
+          <p className="text-sm text-zinc-300 leading-relaxed">
+            Found a bug or have a question? Open an issue on{' '}
+            <a
+              href="https://github.com/april-webm/inference/issues"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-amber-400 hover:text-amber-300"
+            >
+              GitHub
+            </a>.
+          </p>
         </section>
       </main>
     </div>
