@@ -22,6 +22,9 @@ export default async function DashboardLayout({
           <a href="/leaderboard" className="text-zinc-400 hover:text-zinc-100 transition-colors">
             Leaderboard
           </a>
+          <a href="/about" className="text-zinc-400 hover:text-zinc-100 transition-colors">
+            About
+          </a>
           <form action="/auth/signout" method="POST">
             <button type="submit" className="text-zinc-400 hover:text-zinc-100 transition-colors">
               Sign out

@@ -93,6 +93,23 @@ export default async function DashboardPage() {
         </div>
       </div>
 
+      {existing && (
+        <div className="border border-emerald-900 bg-emerald-950/40 rounded-lg px-4 py-3 flex items-center justify-between gap-4">
+          <div className="flex flex-col gap-1">
+            <p className="text-sm text-emerald-300">
+              <span className="font-mono mr-2">✓</span>
+              Submission received {formatDate(existing.submitted_at)} UTC
+            </p>
+            <p className="text-xs text-emerald-500/70">
+              You can keep updating it until the round closes.
+            </p>
+          </div>
+          <a href="#your-submission" className="text-xs text-emerald-300 hover:text-emerald-200 whitespace-nowrap">
+            View ↓
+          </a>
+        </div>
+      )}
+
       <hr className="border-zinc-800" />
 
       <Markdown>{round.description}</Markdown>
@@ -107,7 +124,7 @@ export default async function DashboardPage() {
       />
 
       {existing && (
-        <div className="border border-zinc-800 bg-zinc-900 rounded-lg p-4 flex flex-col gap-3">
+        <div id="your-submission" className="border border-zinc-800 bg-zinc-900 rounded-lg p-4 flex flex-col gap-3 scroll-mt-6">
           <h2 className="text-sm font-medium text-zinc-100">Your current submission</h2>
           <pre className="text-xs font-mono text-zinc-300 bg-zinc-950 border border-zinc-800 rounded p-3 overflow-x-auto">
             {JSON.stringify(existing.answer, null, 2)}
