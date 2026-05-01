@@ -51,11 +51,11 @@ export default function AboutPage() {
               performance (profit, PnL, or whatever the round measures).
             </p>
             <p className="text-sm text-zinc-400 leading-relaxed mt-2">
-              Raw scores are then <strong className="text-zinc-300">normalised to a 0–1000 point
-              scale</strong>. The best raw score in each round maps to 1000 points,
+              Raw scores are then <strong className="text-zinc-300">normalised</strong> so
+              the best raw score in each round maps to 1000 points,
               and everyone else gets points proportional to their raw score.
-              Negative raw scores are floored to 0 points (you can&apos;t lose
-              season points, just miss out). This keeps each round equally
+              Negative raw scores give negative points — a bad strategy
+              can hurt your season total. This keeps each round equally
               weighted while preserving the gap between performances.
             </p>
             <p className="text-sm text-zinc-400 leading-relaxed mt-2">
