@@ -66,7 +66,7 @@ export async function GET(
     return NextResponse.json({ error: 'Not found.' }, { status: 404 })
   }
 
-  const filePath = path.join(process.cwd(), 'private-data', `season-${season}`, diskFile)
+  const filePath = path.join(process.cwd(), 'round-data', `season-${season}`, diskFile)
 
   try {
     const data = await readFile(filePath)
