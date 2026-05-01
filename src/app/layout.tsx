@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: 'Inference',
-  description: 'Three problems. Three months. No code required.',
+  description: 'Three problems. Three weeks.',
 }
 
 export default function RootLayout({
