@@ -17,6 +17,13 @@ function statusFor(round: Round): Status {
   return 'closed'
 }
 
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-AU', {
+    day: 'numeric',
+    month: 'short',
+  })
+}
+
 export default async function LandingPage() {
   const supabase = await createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -101,16 +108,16 @@ export default async function LandingPage() {
                 <div className="flex items-center gap-2 mt-2">
                   <Badge variant={round.difficulty}>{round.difficulty}</Badge>
                   <Badge variant={status}>{status}</Badge>
+                  <span className="text-xs text-zinc-600 ml-auto">
+                    {formatDate(round.opens_at)} – {formatDate(round.closes_at)}
+                  </span>
                 </div>
               </div>
             )
-            const isViewable = status !== 'upcoming'
-            return isViewable ? (
+            return (
               <a key={round.id} href={`/seasons/${currentSeason?.number}/${round.number}`} className="block hover:opacity-90 transition-opacity">
                 {card}
               </a>
-            ) : (
-              <div key={round.id}>{card}</div>
             )
           })}
         </div>
