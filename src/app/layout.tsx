@@ -36,7 +36,7 @@ export default function RootLayout({
             rel="noopener noreferrer"
             className="hover:text-zinc-400 transition-colors underline-offset-4 hover:underline"
           >
-            Support
+            <strong>Support</strong>
           </a>
           <span aria-hidden="true" className="ml-1">♥</span>
         </footer>

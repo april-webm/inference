@@ -133,11 +133,6 @@ export default async function LandingPage() {
           })}
         </div>
 
-        <hr className="border-zinc-800" />
-
-        <p className="text-xs text-zinc-600 text-center">
-          Made for students who want to think seriously about markets.
-        </p>
       </main>
     </div>
   )
