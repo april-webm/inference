@@ -67,7 +67,7 @@ export default async function SeasonRoundDetail({
   const opens = new Date(round.opens_at).getTime()
   const closes = new Date(round.closes_at).getTime()
   const isUpcoming = opens > now
-  const isOpen = round.is_active && opens <= now && closes > now
+  const isOpen = opens <= now && closes > now
   const isClosed = closes <= now
 
   return (

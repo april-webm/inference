@@ -24,10 +24,9 @@ export default async function DashboardPage() {
   const { data: liveRound } = await supabase
     .from('rounds')
     .select('*')
-    .eq('is_active', true)
     .lte('opens_at', nowIso)
     .gt('closes_at', nowIso)
-    .order('number', { ascending: true })
+    .order('opens_at', { ascending: false })
     .limit(1)
     .maybeSingle<Round>()
 
