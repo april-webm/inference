@@ -51,11 +51,12 @@ export default function AboutPage() {
               performance (profit, PnL, or whatever the round measures).
             </p>
             <p className="text-sm text-zinc-400 leading-relaxed mt-2">
-              Raw scores are then <strong className="text-zinc-300">normalised by rank</strong> to
-              a 0–1000 point scale. First place in a round gets 1000 points,
-              last place gets 0, and everyone else is spaced linearly between.
-              This means each round carries equal weight regardless of how
-              the raw numbers compare across different problem types.
+              Raw scores are then <strong className="text-zinc-300">normalised to a 0–1000 point
+              scale</strong>. The best raw score in each round maps to 1000 points,
+              and everyone else gets points proportional to their raw score.
+              Negative raw scores are floored to 0 points (you can&apos;t lose
+              season points, just miss out). This keeps each round equally
+              weighted while preserving the gap between performances.
             </p>
             <p className="text-sm text-zinc-400 leading-relaxed mt-2">
               Your season score is the sum of your normalised scores across
