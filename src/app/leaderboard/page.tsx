@@ -102,6 +102,7 @@ export default async function LeaderboardPage({
 
         <p className="text-xs text-zinc-500">
           {selectedSeason.name} — combined scores across all rounds.
+          {' '}<a href="/about#scoring" className="text-amber-400 hover:text-amber-300">How scoring works</a>
         </p>
 
         {sortedSeasonRows.length === 0 ? (

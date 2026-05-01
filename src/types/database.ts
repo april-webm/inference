@@ -51,6 +51,7 @@ export interface Score {
   user_id: string
   round_id: string
   score: number
+  raw_score: number
   rank: number
   computed_at: string
 }

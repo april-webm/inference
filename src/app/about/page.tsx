@@ -43,14 +43,28 @@ export default function AboutPage() {
         <section className="flex flex-col gap-3">
           <h2 className="text-lg font-medium text-zinc-100">FAQ</h2>
 
-          <div className="flex flex-col gap-1">
+          <div id="scoring" className="flex flex-col gap-1 scroll-mt-6">
             <h3 className="text-sm font-medium text-zinc-100">How is scoring done?</h3>
             <p className="text-sm text-zinc-400 leading-relaxed">
-              Each problem has its own scoring rule, posted with the problem
-              statement. Most rounds score on closeness to a correct answer
-              under the model the problem describes. Higher score is better.
-              Scoring is centralised. Reasoning is not directly scored, but it
-              gets read and is used to spot dodgy submissions.
+              Each round has its own grading rule, described in the problem
+              statement. Your submission is simulated and scored on raw
+              performance (profit, PnL, or whatever the round measures).
+            </p>
+            <p className="text-sm text-zinc-400 leading-relaxed mt-2">
+              Raw scores are then <strong className="text-zinc-300">normalised by rank</strong> to
+              a 0–1000 point scale. First place in a round gets 1000 points,
+              last place gets 0, and everyone else is spaced linearly between.
+              This means each round carries equal weight regardless of how
+              the raw numbers compare across different problem types.
+            </p>
+            <p className="text-sm text-zinc-400 leading-relaxed mt-2">
+              Your season score is the sum of your normalised scores across
+              all rounds (max 3000). The season leaderboard ranks by this total.
+              Per-round raw scores are also shown for reference.
+            </p>
+            <p className="text-sm text-zinc-400 leading-relaxed mt-2">
+              Reasoning is not directly scored, but it gets read and is used
+              to spot dodgy submissions.
             </p>
           </div>
 
