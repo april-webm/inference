@@ -37,12 +37,29 @@ export default async function SeasonRoundDetail({
 
   if (!seasonData) notFound()
 
-  const { data: round } = await supabase
+  // Fetch without description first — only fetch description if round is open/closed
+  const { data: roundMeta } = await supabase
     .from('rounds')
-    .select('*')
+    .select('id, season_id, number, title, tagline, difficulty, opens_at, closes_at, is_active, created_at')
     .eq('season_id', seasonData.id)
     .eq('number', roundNum)
-    .maybeSingle<Round>()
+    .maybeSingle<Omit<Round, 'description'>>()
+
+  if (!roundMeta) notFound()
+
+  const isOpen_ = new Date(roundMeta.opens_at).getTime() <= Date.now()
+
+  let description = ''
+  if (isOpen_) {
+    const { data: full } = await supabase
+      .from('rounds')
+      .select('description')
+      .eq('id', roundMeta.id)
+      .single<{ description: string }>()
+    description = full?.description ?? ''
+  }
+
+  const round = { ...roundMeta, description }
 
   if (!round) notFound()
 

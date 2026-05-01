@@ -4,6 +4,10 @@ import {
   createSupabaseServiceClient,
 } from '@/lib/supabase/server'
 
+const MAX_SUBMISSIONS_PER_ROUND = 3
+const MAX_ANSWER_LENGTH = 10_000
+const MAX_REASONING_LENGTH = 50_000
+
 export async function POST(request: Request) {
   const session = await createSupabaseServerClient()
   const { data: { user } } = await session.auth.getUser()
@@ -26,6 +30,20 @@ export async function POST(request: Request) {
   if (reasoning.length < 50) {
     return NextResponse.json(
       { error: 'Reasoning must be at least 50 characters.' },
+      { status: 400 }
+    )
+  }
+
+  if (answer.length > MAX_ANSWER_LENGTH) {
+    return NextResponse.json(
+      { error: `Answer must be under ${MAX_ANSWER_LENGTH.toLocaleString()} characters.` },
+      { status: 400 }
+    )
+  }
+
+  if (reasoning.length > MAX_REASONING_LENGTH) {
+    return NextResponse.json(
+      { error: `Reasoning must be under ${MAX_REASONING_LENGTH.toLocaleString()} characters.` },
       { status: 400 }
     )
   }
@@ -55,26 +73,37 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Round is closed.' }, { status: 400 })
   }
 
-  const { count: attemptCount, error: attemptErr } = await service
-    .from('submission_attempts')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', user.id)
-    .eq('round_id', roundId)
+  // Atomic attempt insert with count check via RPC to prevent race conditions.
+  // Falls back to check-then-insert if the function doesn't exist yet.
+  const { data: attemptResult, error: attemptErr } = await service.rpc(
+    'insert_submission_attempt',
+    { p_user_id: user.id, p_round_id: roundId, p_max_attempts: MAX_SUBMISSIONS_PER_ROUND }
+  )
+
   if (attemptErr) {
-    return NextResponse.json({ error: 'Rate limit lookup failed.' }, { status: 500 })
-  }
-  if ((attemptCount ?? 0) >= 3) {
+    // Function may not exist — fall back to non-atomic check
+    const { count, error: countErr } = await service
+      .from('submission_attempts')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('round_id', roundId)
+    if (countErr) {
+      return NextResponse.json({ error: 'Rate limit lookup failed.' }, { status: 500 })
+    }
+    if ((count ?? 0) >= MAX_SUBMISSIONS_PER_ROUND) {
+      return NextResponse.json(
+        { error: `You have used all ${MAX_SUBMISSIONS_PER_ROUND} submissions for this round.` },
+        { status: 429 }
+      )
+    }
+    await service
+      .from('submission_attempts')
+      .insert({ user_id: user.id, round_id: roundId })
+  } else if (attemptResult === false) {
     return NextResponse.json(
-      { error: 'You have used all 3 submissions for this round.' },
+      { error: `You have used all ${MAX_SUBMISSIONS_PER_ROUND} submissions for this round.` },
       { status: 429 }
     )
-  }
-
-  const { error: insertAttemptErr } = await service
-    .from('submission_attempts')
-    .insert({ user_id: user.id, round_id: roundId })
-  if (insertAttemptErr) {
-    return NextResponse.json({ error: 'Failed to log attempt.' }, { status: 500 })
   }
 
   const submittedAt = new Date().toISOString()
