@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { Badge } from '@/components/ui/Badge'
 import { Markdown } from '@/components/Markdown'
 import { PublicNav } from '@/components/PublicNav'
+import { Countdown } from '@/components/Countdown'
 import type { Round, Season } from '@/types/database'
 
 export const dynamic = 'force-dynamic'
@@ -83,16 +84,20 @@ export default async function SeasonRoundDetail({
         <hr className="border-zinc-800" />
 
         {isUpcoming ? (
-          <p className="text-sm text-zinc-500">
-            The problem statement will appear here when this round opens.
-          </p>
+          <div className="flex flex-col gap-4">
+            <Countdown target={round.opens_at} label="Opens in" />
+            <p className="text-sm text-zinc-500">
+              The problem statement will appear here when this round opens.
+            </p>
+          </div>
         ) : (
           <Markdown>{round.description}</Markdown>
         )}
 
         {isOpen && (
-          <div className="border border-zinc-800 bg-zinc-900 rounded-lg p-4 text-sm">
-            <a href="/dashboard" className="text-amber-400 hover:text-amber-300">
+          <div className="border border-zinc-800 bg-zinc-900 rounded-lg p-4 flex flex-col gap-3">
+            <Countdown target={round.closes_at} label="Closes in" />
+            <a href="/dashboard" className="text-amber-400 hover:text-amber-300 text-sm">
               Go to dashboard to submit →
             </a>
           </div>

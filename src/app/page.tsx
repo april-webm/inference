@@ -1,5 +1,6 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { Badge } from '@/components/ui/Badge'
+import { Countdown } from '@/components/Countdown'
 import { PublicNav } from '@/components/PublicNav'
 import type { Round, Season } from '@/types/database'
 
@@ -112,6 +113,16 @@ export default async function LandingPage() {
                     {formatDate(round.opens_at)} – {formatDate(round.closes_at)}
                   </span>
                 </div>
+                {status === 'upcoming' && (
+                  <div className="mt-2">
+                    <Countdown target={round.opens_at} label="Opens in" />
+                  </div>
+                )}
+                {status === 'open' && (
+                  <div className="mt-2">
+                    <Countdown target={round.closes_at} label="Closes in" />
+                  </div>
+                )}
               </div>
             )
             return (

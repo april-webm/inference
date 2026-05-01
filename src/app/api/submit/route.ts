@@ -41,13 +41,17 @@ export async function POST(request: Request) {
 
   const { data: round, error: roundErr } = await service
     .from('rounds')
-    .select('id, closes_at')
+    .select('id, opens_at, closes_at')
     .eq('id', roundId)
-    .maybeSingle<{ id: string; closes_at: string }>()
+    .maybeSingle<{ id: string; opens_at: string; closes_at: string }>()
   if (roundErr || !round) {
     return NextResponse.json({ error: 'Round not found.' }, { status: 404 })
   }
-  if (new Date(round.closes_at).getTime() <= Date.now()) {
+  const now = Date.now()
+  if (new Date(round.opens_at).getTime() > now) {
+    return NextResponse.json({ error: 'Round is not open yet.' }, { status: 400 })
+  }
+  if (new Date(round.closes_at).getTime() <= now) {
     return NextResponse.json({ error: 'Round is closed.' }, { status: 400 })
   }
 

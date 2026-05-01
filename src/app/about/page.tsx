@@ -55,6 +55,16 @@ export default function AboutPage() {
           </div>
 
           <div className="flex flex-col gap-1">
+            <h3 className="text-sm font-medium text-zinc-100">When do rounds open and close?</h3>
+            <p className="text-sm text-zinc-400 leading-relaxed">
+              Each round opens at 10:00 AM GMT and closes at midnight GMT
+              seven days later. Rounds run back-to-back, one per week.
+              A countdown timer on each round page shows exactly how long
+              you have left.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-1">
             <h3 className="text-sm font-medium text-zinc-100">When are answers and rankings released?</h3>
             <p className="text-sm text-zinc-400 leading-relaxed">
               After the round closes. The full answer key and a write-up
