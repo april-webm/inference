@@ -12,7 +12,7 @@ function statusFor(round: Round): Status {
   const now = Date.now()
   const opens = new Date(round.opens_at).getTime()
   const closes = new Date(round.closes_at).getTime()
-  if (round.is_active && closes > now) return 'open'
+  if (round.is_active && opens <= now && closes > now) return 'open'
   if (closes <= now) return 'closed'
   if (opens > now) return 'upcoming'
   return 'closed'
