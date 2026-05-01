@@ -1,5 +1,14 @@
 export type Difficulty = 'chill' | 'medium' | 'hard'
 
+export interface Season {
+  id: string
+  number: number
+  name: string
+  starts_at: string
+  ends_at: string
+  created_at: string
+}
+
 export interface Profile {
   id: string
   display_name: string
@@ -9,6 +18,7 @@ export interface Profile {
 
 export interface Round {
   id: string
+  season_id: string
   number: number
   title: string
   tagline: string
@@ -46,6 +56,9 @@ export interface Score {
 }
 
 export interface LeaderboardRow {
+  season_id: string
+  season_number: number
+  season_name: string
   round_id: string
   round_number: number
   round_title: string
@@ -55,4 +68,16 @@ export interface LeaderboardRow {
   display_name: string
   university_email: boolean
   computed_at: string
+}
+
+export interface SeasonLeaderboardRow {
+  season_id: string
+  season_number: number
+  season_name: string
+  user_id: string
+  display_name: string
+  university_email: boolean
+  total_score: number
+  rounds_played: number
+  rank: number
 }

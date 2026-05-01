@@ -1,7 +1,7 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { Badge } from '@/components/ui/Badge'
 import { PublicNav } from '@/components/PublicNav'
-import type { Round } from '@/types/database'
+import type { Round, Season } from '@/types/database'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,11 +20,25 @@ function statusFor(round: Round): Status {
 export default async function LandingPage() {
   const supabase = await createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()
-  const { data: rounds } = await supabase
-    .from('rounds')
+
+  // Get the latest season
+  const { data: seasons } = await supabase
+    .from('seasons')
     .select('*')
-    .order('number', { ascending: true })
-    .returns<Round[]>()
+    .order('number', { ascending: false })
+    .limit(1)
+    .returns<Season[]>()
+
+  const currentSeason = seasons?.[0]
+
+  const { data: rounds } = currentSeason
+    ? await supabase
+        .from('rounds')
+        .select('*')
+        .eq('season_id', currentSeason.id)
+        .order('number', { ascending: true })
+        .returns<Round[]>()
+    : { data: [] as Round[] }
 
   return (
     <div className="min-h-screen">
@@ -68,6 +82,12 @@ export default async function LandingPage() {
 
         <hr className="border-zinc-800" />
 
+        {currentSeason && (
+          <p className="text-xs text-zinc-500 font-mono uppercase tracking-wider">
+            {currentSeason.name}
+          </p>
+        )}
+
         <div className="flex flex-col gap-4">
           {(rounds ?? []).map((round) => {
             const status = statusFor(round)
@@ -86,7 +106,7 @@ export default async function LandingPage() {
             )
             const isViewable = status !== 'upcoming'
             return isViewable ? (
-              <a key={round.id} href={`/rounds/${round.number}`} className="block hover:opacity-90 transition-opacity">
+              <a key={round.id} href={`/seasons/${currentSeason?.number}/${round.number}`} className="block hover:opacity-90 transition-opacity">
                 {card}
               </a>
             ) : (
