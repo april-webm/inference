@@ -16,7 +16,9 @@ export default function ResetPasswordPage() {
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient()
-    supabase.auth.getUser().then(({ data }) => setHasSession(!!data.user))
+    supabase.auth.getUser()
+      .then(({ data }) => setHasSession(!!data.user))
+      .catch(() => setHasSession(false))
   }, [])
 
   async function onSubmit(e: React.FormEvent) {
