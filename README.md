@@ -1,60 +1,80 @@
 # Inference
 
-Frontend for [inferenc.me](https://inferenc.me) — a quantitative competition where you analyse data and submit estimates.
+[![Deploy](https://img.shields.io/badge/deploy-Vercel-black)](https://inferenc.me)
+[![License](https://img.shields.io/badge/license-MIT-blue)]()
 
-Built with Next.js 16, Supabase, and Tailwind. Deployed on Vercel.
+Frontend for [inferenc.me](https://inferenc.me) — a quantitative competition where you analyse data and submit estimates. Three problems, three weeks, no code required.
 
-## Development
+**Stack:** Next.js 16 · Supabase · Tailwind · Vercel
+
+**Status:** Season 1 live.
+
+---
+
+## Getting started
 
 ```bash
 npm install
-cp .env.local.example .env.local   # fill in Supabase keys
+cp .env.local.example .env.local   # see below
 npm run dev                        # http://localhost:3000
 ```
 
-### Environment variables
+### Environment
 
-```
+```env
 NEXT_PUBLIC_SUPABASE_URL=https://<project>.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon_key>
-SUPABASE_SERVICE_ROLE_KEY=<service_role_key>
+SUPABASE_SERVICE_ROLE_KEY=<service_role_key>    # optional for local dev
 ```
 
-Get these from your Supabase project → Settings → API.
+The anon key is public — safe to share, only allows what RLS policies permit. The service role key bypasses RLS and must never be committed. Pages render fine without it; only API routes that write data need it.
 
-## Structure
+---
+
+## Project structure
 
 ```
 src/
 ├── app/
 │   ├── page.tsx                    Landing page
-│   ├── about/                      About + FAQ + scoring explanation
+│   ├── about/                      About, FAQ, scoring explanation
 │   ├── seasons/[season]/[round]/   Round detail + inline submission
 │   ├── dashboard/                  Profile hub (auth required)
-│   ├── dashboard/settings/         Account settings
+│   │   └── settings/              Change name, email, password
 │   ├── leaderboard/                Season leaderboard with search
-│   ├── profile/[id]/               Public profile page
+│   ├── profile/[id]/               Public profile with badges
 │   ├── auth/                       Login, signup, password reset
-│   ├── api/submit/                 Submission endpoint
-│   ├── api/signup/                 Registration endpoint
-│   ├── api/data/                   Gated data file downloads
+│   ├── api/
+│   │   ├── submit/                Submission endpoint (validates per-round)
+│   │   ├── signup/                Registration with email domain check
+│   │   └── data/                  Gated data file downloads from Supabase Storage
 │   ├── privacy/                    Privacy policy
 │   └── terms/                      Terms of use
-├── components/                     Shared UI components
+├── components/                     Shared UI (Countdown, Badge, etc.)
 ├── lib/
-│   ├── supabase/                   Supabase client setup
+│   ├── supabase/                   Client setup (server + browser)
 │   ├── email.ts                    Email domain allowlist
 │   └── moderation.ts               Display name validation
 ├── types/database.ts               TypeScript interfaces
-└── middleware.ts                    API rate limiting
+└── middleware.ts                    API rate limiting (30 req/min/IP)
 ```
 
-## Key decisions
+---
 
-- **Round data** served from Supabase Storage via `/api/data/` route, gated by `opens_at` timestamp. Not stored in git.
-- **Submissions** validated per-round at the API level (checks JSON schema matches expected format).
-- **Scoring** happens in the private [inference-scoring](https://github.com/april-webm/inference-scoring) repo.
+## How it works
+
+- **Round data** served from Supabase Storage via `/api/data/`, gated by `opens_at`. Not stored in git.
+- **Submissions** validated per-round at the API level before storing.
+- **Scoring** happens in the private [inference-scoring](https://github.com/april-webm/inference-scoring) repo after each round closes.
 - **Leaderboard** is a Postgres view — updates instantly when scores are written.
+- **Normalisation** — `points = 1000 × raw_score / best_raw_score`. Negative scores possible.
+
+---
+
+## Related
+
+- **[inference-scoring](https://github.com/april-webm/inference-scoring)** (private) — graders, solutions, data generation, scoring scripts
+- **[inferenc.me](https://inferenc.me)** — live site
 
 ## Issues
 
