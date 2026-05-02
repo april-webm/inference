@@ -7,7 +7,7 @@ Frontend for [inferenc.me](https://inferenc.me) — a quantitative competition w
 
 **Stack:** Next.js 16 · Supabase · Tailwind · Vercel
 
-**Status:** Season 1 live.
+**Status:** Season 0 live.
 
 ---
 

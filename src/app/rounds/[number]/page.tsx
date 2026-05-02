@@ -6,6 +6,6 @@ export default async function RoundRedirect({
   params: Promise<{ number: string }>
 }) {
   const { number } = await params
-  // Legacy redirect: assume Season 1 for old round URLs
-  redirect(`/seasons/1/${number}`)
+  // Legacy redirect: assume Season 0 for old round URLs
+  redirect(`/seasons/0/${number}`)
 }
