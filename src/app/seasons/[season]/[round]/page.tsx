@@ -25,7 +25,7 @@ export default async function SeasonRoundDetail({
   const { season, round: roundStr } = await params
   const seasonNum = Number(season)
   const roundNum = Number(roundStr)
-  if (!Number.isInteger(seasonNum) || seasonNum <= 0) notFound()
+  if (!Number.isInteger(seasonNum) || seasonNum < 0) notFound()
   if (!Number.isInteger(roundNum) || roundNum <= 0) notFound()
 
   const supabase = await createSupabaseServerClient()
