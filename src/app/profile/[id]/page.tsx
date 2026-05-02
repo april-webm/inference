@@ -1,8 +1,23 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { Badge } from '@/components/ui/Badge'
 import { PublicNav } from '@/components/PublicNav'
 import type { Profile, Score, Season } from '@/types/database'
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}): Promise<Metadata> {
+  const { id } = await params
+  const supabase = await createSupabaseServerClient()
+  const { data } = await supabase
+    .from('profiles').select('display_name').eq('id', id).maybeSingle()
+  return {
+    title: data ? `${data.display_name} — Inference` : 'Profile — Inference',
+  }
+}
 
 export const dynamic = 'force-dynamic'
 

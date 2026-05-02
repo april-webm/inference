@@ -1,4 +1,10 @@
+import type { Metadata } from 'next'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
+
+export const metadata: Metadata = {
+  title: 'Leaderboard — Inference',
+  description: 'Season rankings and per-round scores.',
+}
 import { PublicNav } from '@/components/PublicNav'
 import { LeaderboardSearch } from '@/components/LeaderboardSearch'
 import type { LeaderboardRow, Season, SeasonLeaderboardRow } from '@/types/database'

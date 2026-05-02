@@ -1,4 +1,10 @@
+import type { Metadata } from 'next'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
+
+export const metadata: Metadata = {
+  title: 'Dashboard — Inference',
+  description: 'Your profile, submissions, and scores.',
+}
 import { Badge } from '@/components/ui/Badge'
 import { Countdown } from '@/components/Countdown'
 import { ShareProfileButton } from '@/components/ShareProfileButton'

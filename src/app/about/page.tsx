@@ -1,4 +1,10 @@
+import type { Metadata } from 'next'
 import { PublicNav } from '@/components/PublicNav'
+
+export const metadata: Metadata = {
+  title: 'About — Inference',
+  description: 'Rules, FAQ, and scoring for the Inference quantitative competition.',
+}
 
 export const dynamic = 'force-dynamic'
 

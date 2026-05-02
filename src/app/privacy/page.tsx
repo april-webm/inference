@@ -1,4 +1,10 @@
+import type { Metadata } from 'next'
 import { PublicNav } from '@/components/PublicNav'
+
+export const metadata: Metadata = {
+  title: 'Privacy — Inference',
+  description: 'How Inference handles your data.',
+}
 
 export default function PrivacyPage() {
   return (

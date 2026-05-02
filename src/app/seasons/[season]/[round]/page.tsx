@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { Badge } from '@/components/ui/Badge'
@@ -8,6 +9,26 @@ import { SubmissionForm } from '@/components/SubmissionForm'
 import type { Round, Season, Submission } from '@/types/database'
 
 export const dynamic = 'force-dynamic'
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ season: string; round: string }>
+}): Promise<Metadata> {
+  const { season, round } = await params
+  const supabase = await createSupabaseServerClient()
+  const { data: seasonData } = await supabase
+    .from('seasons').select('id, name').eq('number', parseInt(season)).maybeSingle()
+  if (!seasonData) return { title: 'Round — Inference' }
+  const { data: roundData } = await supabase
+    .from('rounds').select('title, tagline')
+    .eq('season_id', seasonData.id).eq('number', parseInt(round)).maybeSingle()
+  if (!roundData) return { title: 'Round — Inference' }
+  return {
+    title: `${roundData.title} — Inference`,
+    description: roundData.tagline,
+  }
+}
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-AU', {

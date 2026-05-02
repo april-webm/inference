@@ -1,4 +1,10 @@
+import type { Metadata } from 'next'
 import { PublicNav } from '@/components/PublicNav'
+
+export const metadata: Metadata = {
+  title: 'Terms — Inference',
+  description: 'Terms of use for the Inference competition.',
+}
 
 export default function TermsPage() {
   return (
