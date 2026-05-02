@@ -16,21 +16,20 @@ export default async function DashboardPage() {
   const supabase = await createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const nowIso = new Date().toISOString()
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('display_name, university_email, created_at')
-    .eq('id', user!.id)
-    .single<Pick<Profile, 'display_name' | 'university_email' | 'created_at'>>()
-
-  // Current season
-  const { data: seasons } = await supabase
-    .from('seasons')
-    .select('id, number, name')
-    .order('number', { ascending: false })
-    .limit(1)
-    .returns<Pick<Season, 'id' | 'number' | 'name'>[]>()
+  // Parallel: profile + season (independent)
+  const [{ data: profile }, { data: seasons }] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('display_name, university_email, created_at')
+      .eq('id', user!.id)
+      .single<Pick<Profile, 'display_name' | 'university_email' | 'created_at'>>(),
+    supabase
+      .from('seasons')
+      .select('id, number, name')
+      .order('number', { ascending: false })
+      .limit(1)
+      .returns<Pick<Season, 'id' | 'number' | 'name'>[]>(),
+  ])
 
   const currentSeason = seasons?.[0]
 

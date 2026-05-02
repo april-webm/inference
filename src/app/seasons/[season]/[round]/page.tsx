@@ -29,13 +29,16 @@ export default async function SeasonRoundDetail({
   if (!Number.isInteger(roundNum) || roundNum <= 0) notFound()
 
   const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
 
-  const { data: seasonData } = await supabase
-    .from('seasons')
-    .select('id, number, name')
-    .eq('number', seasonNum)
-    .maybeSingle<Pick<Season, 'id' | 'number' | 'name'>>()
+  // Parallel: auth + season lookup
+  const [{ data: { user } }, { data: seasonData }] = await Promise.all([
+    supabase.auth.getUser(),
+    supabase
+      .from('seasons')
+      .select('id, number, name')
+      .eq('number', seasonNum)
+      .maybeSingle<Pick<Season, 'id' | 'number' | 'name'>>(),
+  ])
 
   if (!seasonData) notFound()
 
@@ -55,37 +58,31 @@ export default async function SeasonRoundDetail({
   const isOpen = opens <= now && closes > now
   const isClosed = closes <= now
 
-  let description = ''
-  if (!isUpcoming) {
-    const { data: full } = await supabase
-      .from('rounds')
-      .select('description')
-      .eq('id', roundMeta.id)
-      .single<{ description: string }>()
-    description = full?.description ?? ''
-  }
+  // Parallel: description + submission + attempts (all independent)
+  const descriptionPromise = !isUpcoming
+    ? supabase.from('rounds').select('description').eq('id', roundMeta.id)
+        .single<{ description: string }>()
+    : Promise.resolve({ data: null })
 
-  // Fetch submission + attempts if logged in and round is open
-  let existing: Submission | null = null
-  let submissionsRemaining = 3
-  if (user && (isOpen || isClosed)) {
-    const { data: sub } = await supabase
-      .from('submissions')
-      .select('*')
-      .eq('round_id', roundMeta.id)
-      .eq('user_id', user.id)
-      .maybeSingle<Submission>()
-    existing = sub
+  const subPromise = user && (isOpen || isClosed)
+    ? supabase.from('submissions').select('*')
+        .eq('round_id', roundMeta.id).eq('user_id', user.id)
+        .maybeSingle<Submission>()
+    : Promise.resolve({ data: null })
 
-    if (isOpen) {
-      const { count } = await supabase
-        .from('submission_attempts')
+  const attemptsPromise = user && isOpen
+    ? supabase.from('submission_attempts')
         .select('id', { count: 'exact', head: true })
-        .eq('round_id', roundMeta.id)
-        .eq('user_id', user.id)
-      submissionsRemaining = Math.max(0, 3 - (count ?? 0))
-    }
-  }
+        .eq('round_id', roundMeta.id).eq('user_id', user.id)
+    : Promise.resolve({ count: 0 })
+
+  const [descResult, subResult, attemptsResult] = await Promise.all([
+    descriptionPromise, subPromise, attemptsPromise,
+  ])
+
+  const description = descResult.data?.description ?? ''
+  const existing = subResult.data ?? null
+  const submissionsRemaining = Math.max(0, 3 - ((attemptsResult as { count: number | null }).count ?? 0))
 
   return (
     <div className="min-h-screen">
@@ -145,6 +142,7 @@ export default async function SeasonRoundDetail({
 
             <SubmissionForm
               roundId={roundMeta.id}
+              roundNumber={roundMeta.number}
               closesAt={roundMeta.closes_at}
               existingAnswer={existing?.answer ?? null}
               existingReasoning={existing?.reasoning ?? null}
