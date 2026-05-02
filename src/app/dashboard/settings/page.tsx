@@ -14,6 +14,8 @@ export default function SettingsPage() {
   const [nameStatus, setNameStatus] = useState<string | null>(null)
   const [emailStatus, setEmailStatus] = useState<string | null>(null)
   const [pwStatus, setPwStatus] = useState<string | null>(null)
+  const [emailOptOut, setEmailOptOut] = useState(false)
+  const [emailPrefStatus, setEmailPrefStatus] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -21,6 +23,11 @@ export default function SettingsPage() {
       if (data.user) {
         setEmail(data.user.email ?? '')
         setDisplayName(data.user.user_metadata?.display_name ?? '')
+        // Fetch email opt-out preference
+        supabase.from('profiles').select('email_opt_out').eq('id', data.user.id).single()
+          .then(({ data: profile }) => {
+            if (profile) setEmailOptOut(profile.email_opt_out ?? false)
+          })
       }
       setLoading(false)
     })
@@ -162,6 +169,36 @@ export default function SettingsPage() {
           )}
         </div>
       </form>
+
+      <hr className="border-zinc-800" />
+
+      {/* Email notifications */}
+      <div className="flex flex-col gap-3">
+        <h2 className="text-sm font-medium text-zinc-400">Email notifications</h2>
+        <label className="flex items-center gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={!emailOptOut}
+            onChange={async (e) => {
+              const optOut = !e.target.checked
+              setEmailOptOut(optOut)
+              setEmailPrefStatus(null)
+              const { data: { user: u } } = await supabase.auth.getUser()
+              if (u) {
+                await supabase.from('profiles').update({ email_opt_out: optOut }).eq('id', u.id)
+                setEmailPrefStatus(optOut ? 'Unsubscribed.' : 'Subscribed.')
+              }
+            }}
+            className="w-4 h-4 rounded border-zinc-600 bg-zinc-900 text-amber-400 focus:ring-amber-400"
+          />
+          <span className="text-sm text-zinc-300">
+            Receive round notifications and score updates
+          </span>
+        </label>
+        {emailPrefStatus && (
+          <p className="text-xs text-emerald-400">{emailPrefStatus}</p>
+        )}
+      </div>
 
       <hr className="border-zinc-800" />
 
