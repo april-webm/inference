@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { createSupabaseServiceClient } from '@/lib/supabase/server'
 
 const ALLOWED_FILES: Record<string, Record<string, string[]>> = {
-  '1': {
+  '0': {
     '1': ['race_data.csv'],
     '2': ['auction_history.csv'],
     '3': ['asset_history.csv', 'market_prices.json'],
