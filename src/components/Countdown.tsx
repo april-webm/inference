@@ -18,7 +18,13 @@ function timeLeft(target: string): { d: number; h: number; m: number; s: number 
   }
 }
 
-export function Countdown({ target, label }: { target: string; label?: string }) {
+interface CountdownProps {
+  target: string
+  label?: string
+  compact?: boolean
+}
+
+export function Countdown({ target, label, compact }: CountdownProps) {
   const [remaining, setRemaining] = useState(timeLeft(target))
 
   useEffect(() => {
@@ -31,6 +37,15 @@ export function Countdown({ target, label }: { target: string; label?: string })
   }, [target])
 
   if (!remaining) return null
+
+  if (compact) {
+    return (
+      <span className="font-mono text-zinc-400">
+        {label && <span className="text-zinc-500 mr-1">{label}</span>}
+        {remaining.d}d {pad(remaining.h)}:{pad(remaining.m)}:{pad(remaining.s)}
+      </span>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-1">

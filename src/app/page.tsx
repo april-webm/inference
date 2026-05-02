@@ -42,7 +42,7 @@ export default async function LandingPage() {
   const { data: rounds } = currentSeason
     ? await supabase
         .from('rounds')
-        .select('*')
+        .select('id, number, title, tagline, difficulty, opens_at, closes_at, is_active')
         .eq('season_id', currentSeason.id)
         .order('number', { ascending: true })
         .returns<Round[]>()

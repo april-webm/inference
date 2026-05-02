@@ -4,7 +4,8 @@ import { Badge } from '@/components/ui/Badge'
 import { Markdown } from '@/components/Markdown'
 import { PublicNav } from '@/components/PublicNav'
 import { Countdown } from '@/components/Countdown'
-import type { Round, Season } from '@/types/database'
+import { SubmissionForm } from '@/components/SubmissionForm'
+import type { Round, Season, Submission } from '@/types/database'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,16 +29,16 @@ export default async function SeasonRoundDetail({
   if (!Number.isInteger(roundNum) || roundNum <= 0) notFound()
 
   const supabase = await createSupabaseServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
   const { data: seasonData } = await supabase
     .from('seasons')
-    .select('*')
+    .select('id, number, name')
     .eq('number', seasonNum)
-    .maybeSingle<Season>()
+    .maybeSingle<Pick<Season, 'id' | 'number' | 'name'>>()
 
   if (!seasonData) notFound()
 
-  // Fetch without description first — only fetch description if round is open/closed
   const { data: roundMeta } = await supabase
     .from('rounds')
     .select('id, season_id, number, title, tagline, difficulty, opens_at, closes_at, is_active, created_at')
@@ -47,10 +48,15 @@ export default async function SeasonRoundDetail({
 
   if (!roundMeta) notFound()
 
-  const isOpen_ = new Date(roundMeta.opens_at).getTime() <= Date.now()
+  const now = Date.now()
+  const opens = new Date(roundMeta.opens_at).getTime()
+  const closes = new Date(roundMeta.closes_at).getTime()
+  const isUpcoming = opens > now
+  const isOpen = opens <= now && closes > now
+  const isClosed = closes <= now
 
   let description = ''
-  if (isOpen_) {
+  if (!isUpcoming) {
     const { data: full } = await supabase
       .from('rounds')
       .select('description')
@@ -59,16 +65,27 @@ export default async function SeasonRoundDetail({
     description = full?.description ?? ''
   }
 
-  const round = { ...roundMeta, description }
+  // Fetch submission + attempts if logged in and round is open
+  let existing: Submission | null = null
+  let submissionsRemaining = 3
+  if (user && (isOpen || isClosed)) {
+    const { data: sub } = await supabase
+      .from('submissions')
+      .select('*')
+      .eq('round_id', roundMeta.id)
+      .eq('user_id', user.id)
+      .maybeSingle<Submission>()
+    existing = sub
 
-  if (!round) notFound()
-
-  const now = Date.now()
-  const opens = new Date(round.opens_at).getTime()
-  const closes = new Date(round.closes_at).getTime()
-  const isUpcoming = opens > now
-  const isOpen = opens <= now && closes > now
-  const isClosed = closes <= now
+    if (isOpen) {
+      const { count } = await supabase
+        .from('submission_attempts')
+        .select('id', { count: 'exact', head: true })
+        .eq('round_id', roundMeta.id)
+        .eq('user_id', user.id)
+      submissionsRemaining = Math.max(0, 3 - (count ?? 0))
+    }
+  }
 
   return (
     <div className="min-h-screen">
@@ -79,43 +96,77 @@ export default async function SeasonRoundDetail({
         </a>
         <div className="flex flex-col gap-2">
           <p className="font-mono text-xs text-zinc-500">
-            {seasonData.name} · Round {String(round.number).padStart(2, '0')}
+            {seasonData.name} · Round {String(roundMeta.number).padStart(2, '0')}
           </p>
-          <h1 className="text-2xl font-medium text-zinc-100">{round.title}</h1>
-          <p className="text-sm text-zinc-400">{round.tagline}</p>
+          <h1 className="text-2xl font-medium text-zinc-100">{roundMeta.title}</h1>
+          <p className="text-sm text-zinc-400">{roundMeta.tagline}</p>
           <div className="flex items-center gap-3 text-xs text-zinc-500 mt-1">
-            <Badge variant={round.difficulty}>{round.difficulty}</Badge>
+            <Badge variant={roundMeta.difficulty}>{roundMeta.difficulty}</Badge>
             {isOpen && <Badge variant="open">open</Badge>}
             {isClosed && <Badge variant="closed">closed</Badge>}
             {isUpcoming && <Badge variant="upcoming">upcoming</Badge>}
-            <span>
-              {isUpcoming
-                ? `Opens ${formatDate(round.opens_at)}`
-                : isClosed
-                ? `Closed ${formatDate(round.closes_at)}`
-                : `Closes ${formatDate(round.closes_at)}`}
-            </span>
+            {isUpcoming && <Countdown target={roundMeta.opens_at} label="Opens in" compact />}
+            {isOpen && <Countdown target={roundMeta.closes_at} label="Closes in" compact />}
+            {isClosed && <span>Closed {formatDate(roundMeta.closes_at)}</span>}
           </div>
         </div>
 
         <hr className="border-zinc-800" />
 
-        {isUpcoming ? (
-          <div className="flex flex-col gap-4">
-            <Countdown target={round.opens_at} label="Opens in" />
-            <p className="text-sm text-zinc-500">
-              The problem statement will appear here when this round opens.
-            </p>
-          </div>
-        ) : (
-          <Markdown>{round.description}</Markdown>
+        {isUpcoming && (
+          <p className="text-sm text-zinc-500">
+            The problem statement will appear here when this round opens.
+          </p>
         )}
 
-        {isOpen && (
-          <div className="border border-zinc-800 bg-zinc-900 rounded-lg p-4 flex flex-col gap-3">
-            <Countdown target={round.closes_at} label="Closes in" />
-            <a href="/dashboard" className="text-amber-400 hover:text-amber-300 text-sm">
-              Go to dashboard to submit →
+        {!isUpcoming && <Markdown>{description}</Markdown>}
+
+        {/* Submission section */}
+        {isOpen && user && (
+          <>
+            <hr className="border-zinc-800" />
+
+            {existing && (
+              <div className="border border-emerald-900 bg-emerald-950/40 rounded-lg px-4 py-3 flex items-center justify-between gap-4">
+                <div className="flex flex-col gap-1">
+                  <p className="text-sm text-emerald-300">
+                    <span className="font-mono mr-2">✓</span>
+                    Submission received
+                  </p>
+                  <p className="text-xs text-emerald-500/70">
+                    You can update it until the round closes.
+                  </p>
+                </div>
+                <a href="#your-submission" className="text-xs text-emerald-300 hover:text-emerald-200 whitespace-nowrap">
+                  View ↓
+                </a>
+              </div>
+            )}
+
+            <SubmissionForm
+              roundId={roundMeta.id}
+              closesAt={roundMeta.closes_at}
+              existingAnswer={existing?.answer ?? null}
+              existingReasoning={existing?.reasoning ?? null}
+              submissionsRemaining={submissionsRemaining}
+            />
+
+            {existing && (
+              <div id="your-submission" className="border border-zinc-800 bg-zinc-900 rounded-lg p-4 flex flex-col gap-3 scroll-mt-6">
+                <h2 className="text-sm font-medium text-zinc-100">Your current submission</h2>
+                <pre className="text-xs font-mono text-zinc-300 bg-zinc-950 border border-zinc-800 rounded p-3 overflow-x-auto">
+                  {JSON.stringify(existing.answer, null, 2)}
+                </pre>
+                <p className="text-xs text-zinc-400 whitespace-pre-wrap">{existing.reasoning}</p>
+              </div>
+            )}
+          </>
+        )}
+
+        {isOpen && !user && (
+          <div className="border border-zinc-800 bg-zinc-900 rounded-lg p-4 text-sm text-center">
+            <a href="/auth/login" className="text-amber-400 hover:text-amber-300">
+              Log in to submit your answer
             </a>
           </div>
         )}

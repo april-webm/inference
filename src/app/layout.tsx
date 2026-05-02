@@ -31,17 +31,22 @@ export default function RootLayout({
         <Analytics />
         <SpeedInsights />
         <div className="flex-1">{children}</div>
-        <footer className="px-6 py-6 text-center text-xs text-zinc-600">
-          Built by April.{' '}
-          <a
-            href="https://ko-fi.com/aprilwebm"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-zinc-400 transition-colors underline-offset-4 hover:underline"
-          >
-            <strong>Support</strong>
-          </a>
-          <span aria-hidden="true" className="ml-1">♥</span>
+        <footer className="max-w-4xl mx-auto px-6 py-6 text-xs text-zinc-600 flex items-center justify-between w-full">
+          <div className="flex items-center gap-2">
+            <span>Built by April.</span>
+            <a
+              href="https://ko-fi.com/aprilwebm"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-zinc-400 transition-colors underline-offset-4 hover:underline"
+            >
+              <strong>Support</strong> <span aria-hidden="true">♥</span>
+            </a>
+          </div>
+          <div className="flex items-center gap-3">
+            <a href="/privacy" className="hover:text-zinc-400 transition-colors">Privacy</a>
+            <a href="/terms" className="hover:text-zinc-400 transition-colors">Terms</a>
+          </div>
         </footer>
       </body>
     </html>
