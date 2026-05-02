@@ -60,8 +60,8 @@ export default async function SeasonRoundDetail({
 
   // Parallel: description + submission + attempts (all independent)
   const descriptionPromise = !isUpcoming
-    ? supabase.from('rounds').select('description').eq('id', roundMeta.id)
-        .single<{ description: string }>()
+    ? supabase.from('rounds').select('description, writeup').eq('id', roundMeta.id)
+        .single<{ description: string; writeup: string | null }>()
     : Promise.resolve({ data: null })
 
   const subPromise = user && (isOpen || isClosed)
@@ -81,6 +81,7 @@ export default async function SeasonRoundDetail({
   ])
 
   const description = descResult.data?.description ?? ''
+  const writeup = isClosed ? (descResult.data?.writeup ?? null) : null
   const existing = subResult.data ?? null
   const submissionsRemaining = Math.max(0, 3 - ((attemptsResult as { count: number | null }).count ?? 0))
 
@@ -167,6 +168,16 @@ export default async function SeasonRoundDetail({
               Log in to submit your answer
             </a>
           </div>
+        )}
+
+        {isClosed && writeup && (
+          <>
+            <hr className="border-zinc-800" />
+            <div className="flex flex-col gap-2">
+              <h2 className="text-lg font-medium text-amber-400">Solution Writeup</h2>
+              <Markdown>{writeup}</Markdown>
+            </div>
+          </>
         )}
       </main>
     </div>
