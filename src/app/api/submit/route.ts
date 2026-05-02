@@ -19,11 +19,11 @@ function validateRound1(answer: unknown): string | null {
   }
   const obj = answer as Record<string, unknown>
   for (const h of ROUND_1_HORSES) {
-    if (!(h in obj)) return `Missing horse: ${h}`
-    if (typeof obj[h] !== 'number') return `Stake for ${h} must be a number.`
-    if ((obj[h] as number) < 0) return `Stake for ${h} must be non-negative.`
+    const val = obj[h]
+    if (val !== undefined && typeof val !== 'number') return `Stake for ${h} must be a number.`
+    if (typeof val === 'number' && val < 0) return `Stake for ${h} must be non-negative.`
   }
-  const total = ROUND_1_HORSES.reduce((sum, h) => sum + (obj[h] as number), 0)
+  const total = ROUND_1_HORSES.reduce((sum, h) => sum + ((obj[h] as number) || 0), 0)
   if (total > 10_000 + 1e-6) return `Total stake ${total.toFixed(2)} exceeds £10,000.`
   return null
 }
