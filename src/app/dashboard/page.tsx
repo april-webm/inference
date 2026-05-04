@@ -77,15 +77,6 @@ export default async function DashboardPage() {
     return opens <= now && closes > now
   })
 
-  let attemptsRemaining = 3
-  if (activeRound) {
-    const { count } = await supabase
-      .from('submission_attempts')
-      .select('id', { count: 'exact', head: true })
-      .eq('round_id', activeRound.id)
-      .eq('user_id', user!.id)
-    attemptsRemaining = Math.max(0, 3 - (count ?? 0))
-  }
 
   // Season rank
   const { data: seasonRank } = currentSeason
@@ -168,7 +159,7 @@ export default async function DashboardPage() {
               <p className="text-sm text-zinc-100 mt-1">{activeRound.title}</p>
             </div>
             <div className="text-right">
-              <p className="text-xs text-zinc-500">{attemptsRemaining} of 3 submissions left</p>
+              <p className="text-xs text-zinc-500">Update your answer any time before the round closes.</p>
             </div>
           </div>
           <Countdown target={activeRound.closes_at} label="Closes in" />

@@ -10,7 +10,6 @@ interface SubmissionFormProps {
   closesAt: string
   existingAnswer?: Record<string, unknown> | null
   existingReasoning?: string | null
-  submissionsRemaining: number
 }
 
 const ROUND_1_HORSES = [
@@ -55,10 +54,8 @@ export function SubmissionForm({
   closesAt,
   existingAnswer,
   existingReasoning,
-  submissionsRemaining,
 }: SubmissionFormProps) {
   const isClosed = new Date(closesAt) <= new Date()
-  const noneLeft = submissionsRemaining <= 0
 
   const [reasoning, setReasoning] = useState(existingReasoning ?? '')
   const [status, setStatus] = useState<'idle' | 'confirming' | 'loading' | 'success' | 'error'>('idle')
@@ -105,13 +102,6 @@ export function SubmissionForm({
     )
   }
 
-  if (noneLeft) {
-    return (
-      <div className="border border-zinc-800 bg-zinc-900 rounded-lg p-4 text-sm text-zinc-400">
-        You have used all 3 submissions for this round. Your latest one is the one we score.
-      </div>
-    )
-  }
 
   function buildAnswer(): string {
     if (roundNumber === 1) {
@@ -203,7 +193,6 @@ export function SubmissionForm({
         {hasExisting ? (
           <>
             <p className="text-xs text-zinc-500">
-              This will use 1 of your {submissionsRemaining} remaining submissions.
               Review your changes below.
             </p>
             <AnswerDiff
@@ -223,7 +212,7 @@ export function SubmissionForm({
           </>
         ) : (
           <p className="text-xs text-zinc-500">
-            This will use 1 of your {submissionsRemaining} remaining submissions.
+            Are you sure you want to submit?
           </p>
         )}
 
@@ -385,7 +374,7 @@ export function SubmissionForm({
       <div className="flex items-center gap-3">
         <Button type="submit" disabled={status === 'loading'}>{buttonLabel}</Button>
         <p className="text-xs text-zinc-500">
-          {submissionsRemaining} of 3 submissions left this round
+          You can update your answer until the round closes.
         </p>
       </div>
       {status === 'success' && (

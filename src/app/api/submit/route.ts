@@ -4,9 +4,9 @@ import {
   createSupabaseServiceClient,
 } from '@/lib/supabase/server'
 
-const MAX_SUBMISSIONS_PER_ROUND = 3
 const MAX_ANSWER_LENGTH = 10_000
 const MAX_REASONING_LENGTH = 50_000
+const SUBMIT_COOLDOWN_MS = 30_000 // 30 seconds between submissions per user
 
 const ROUND_1_HORSES = [
   'Shadowfax', 'Iron Duke', 'Morningstar', 'Red Tide',
@@ -145,47 +145,31 @@ export async function POST(request: Request) {
     }
   }
 
-  // Check if user already has a submission for this round (i.e. this is an update)
-  const { data: existingSub } = await service
-    .from('submissions')
-    .select('id')
+  // Rate limit: check last attempt timestamp for this user+round
+  const { data: lastAttempt } = await service
+    .from('submission_attempts')
+    .select('attempted_at')
     .eq('user_id', user.id)
     .eq('round_id', roundId)
+    .order('attempted_at', { ascending: false })
+    .limit(1)
     .maybeSingle()
 
-  // Only count attempts for new submissions, not updates
-  if (!existingSub) {
-    const { data: attemptResult, error: attemptErr } = await service.rpc(
-      'insert_submission_attempt',
-      { p_user_id: user.id, p_round_id: roundId, p_max_attempts: MAX_SUBMISSIONS_PER_ROUND }
-    )
-
-    if (attemptErr) {
-      // Function may not exist — fall back to non-atomic check
-      const { count, error: countErr } = await service
-        .from('submission_attempts')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('round_id', roundId)
-      if (countErr) {
-        return NextResponse.json({ error: 'Rate limit lookup failed.' }, { status: 500 })
-      }
-      if ((count ?? 0) >= MAX_SUBMISSIONS_PER_ROUND) {
-        return NextResponse.json(
-          { error: `You have used all ${MAX_SUBMISSIONS_PER_ROUND} submissions for this round.` },
-          { status: 429 }
-        )
-      }
-      await service
-        .from('submission_attempts')
-        .insert({ user_id: user.id, round_id: roundId })
-    } else if (attemptResult === false) {
+  if (lastAttempt) {
+    const elapsed = Date.now() - new Date(lastAttempt.attempted_at).getTime()
+    if (elapsed < SUBMIT_COOLDOWN_MS) {
+      const wait = Math.ceil((SUBMIT_COOLDOWN_MS - elapsed) / 1000)
       return NextResponse.json(
-        { error: `You have used all ${MAX_SUBMISSIONS_PER_ROUND} submissions for this round.` },
+        { error: `Please wait ${wait} seconds before submitting again.` },
         { status: 429 }
       )
     }
   }
+
+  // Log attempt for tracking (unlimited, no cap)
+  await service
+    .from('submission_attempts')
+    .insert({ user_id: user.id, round_id: roundId })
 
   const submittedAt = new Date().toISOString()
   const { error: upsertErr } = await service

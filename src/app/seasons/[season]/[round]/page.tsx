@@ -91,11 +91,6 @@ export default async function SeasonRoundDetail({
         .maybeSingle<Submission>()
     : Promise.resolve({ data: null })
 
-  const attemptsPromise = user && isOpen
-    ? supabase.from('submission_attempts')
-        .select('id', { count: 'exact', head: true })
-        .eq('round_id', roundMeta.id).eq('user_id', user.id)
-    : Promise.resolve({ count: 0 })
 
   const submissionCountPromise = isOpen
     ? supabase.from('submissions')
@@ -103,14 +98,13 @@ export default async function SeasonRoundDetail({
         .eq('round_id', roundMeta.id)
     : Promise.resolve({ count: null })
 
-  const [descResult, subResult, attemptsResult, countResult] = await Promise.all([
-    descriptionPromise, subPromise, attemptsPromise, submissionCountPromise,
+  const [descResult, subResult, countResult] = await Promise.all([
+    descriptionPromise, subPromise, submissionCountPromise,
   ])
 
   const description = descResult.data?.description ?? ''
   const writeup = isClosed ? (descResult.data?.writeup ?? null) : null
   const existing = subResult.data ?? null
-  const submissionsRemaining = Math.max(0, 3 - ((attemptsResult as { count: number | null }).count ?? 0))
   const submissionCount = (countResult as { count: number | null }).count
 
   return (
@@ -178,7 +172,6 @@ export default async function SeasonRoundDetail({
               closesAt={roundMeta.closes_at}
               existingAnswer={existing?.answer ?? null}
               existingReasoning={existing?.reasoning ?? null}
-              submissionsRemaining={submissionsRemaining}
             />
 
             {existing && (
