@@ -145,37 +145,46 @@ export async function POST(request: Request) {
     }
   }
 
-  // Atomic attempt insert with count check via RPC to prevent race conditions.
-  // Falls back to check-then-insert if the function doesn't exist yet.
-  const { data: attemptResult, error: attemptErr } = await service.rpc(
-    'insert_submission_attempt',
-    { p_user_id: user.id, p_round_id: roundId, p_max_attempts: MAX_SUBMISSIONS_PER_ROUND }
-  )
+  // Check if user already has a submission for this round (i.e. this is an update)
+  const { data: existingSub } = await service
+    .from('submissions')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('round_id', roundId)
+    .maybeSingle()
 
-  if (attemptErr) {
-    // Function may not exist — fall back to non-atomic check
-    const { count, error: countErr } = await service
-      .from('submission_attempts')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .eq('round_id', roundId)
-    if (countErr) {
-      return NextResponse.json({ error: 'Rate limit lookup failed.' }, { status: 500 })
-    }
-    if ((count ?? 0) >= MAX_SUBMISSIONS_PER_ROUND) {
+  // Only count attempts for new submissions, not updates
+  if (!existingSub) {
+    const { data: attemptResult, error: attemptErr } = await service.rpc(
+      'insert_submission_attempt',
+      { p_user_id: user.id, p_round_id: roundId, p_max_attempts: MAX_SUBMISSIONS_PER_ROUND }
+    )
+
+    if (attemptErr) {
+      // Function may not exist — fall back to non-atomic check
+      const { count, error: countErr } = await service
+        .from('submission_attempts')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('round_id', roundId)
+      if (countErr) {
+        return NextResponse.json({ error: 'Rate limit lookup failed.' }, { status: 500 })
+      }
+      if ((count ?? 0) >= MAX_SUBMISSIONS_PER_ROUND) {
+        return NextResponse.json(
+          { error: `You have used all ${MAX_SUBMISSIONS_PER_ROUND} submissions for this round.` },
+          { status: 429 }
+        )
+      }
+      await service
+        .from('submission_attempts')
+        .insert({ user_id: user.id, round_id: roundId })
+    } else if (attemptResult === false) {
       return NextResponse.json(
         { error: `You have used all ${MAX_SUBMISSIONS_PER_ROUND} submissions for this round.` },
         { status: 429 }
       )
     }
-    await service
-      .from('submission_attempts')
-      .insert({ user_id: user.id, round_id: roundId })
-  } else if (attemptResult === false) {
-    return NextResponse.json(
-      { error: `You have used all ${MAX_SUBMISSIONS_PER_ROUND} submissions for this round.` },
-      { status: 429 }
-    )
   }
 
   const submittedAt = new Date().toISOString()

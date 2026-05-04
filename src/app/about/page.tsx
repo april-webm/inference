@@ -125,6 +125,32 @@ export default function AboutPage() {
               private to you and to whoever is scoring.
             </p>
           </div>
+
+          <div id="ratings" className="flex flex-col gap-1 scroll-mt-6">
+            <h3 className="text-sm font-medium text-zinc-100">How does the rating system work?</h3>
+            <p className="text-sm text-zinc-400 leading-relaxed">
+              We use Glicko-2 (Glickman, 2001), adapted for ranked competitions
+              rather than head-to-head games. Each round acts as a rating period.
+              Within a round, participants who scored higher are treated as having
+              beaten those who scored lower in a set of virtual pairwise matches.
+            </p>
+            <p className="text-sm text-zinc-400 leading-relaxed mt-2">
+              Every participant starts at a rating of 1500 with a high rating
+              deviation (RD). RD measures how uncertain the system is about your
+              true skill. It decreases as you play more rounds and increases if
+              you skip seasons, reflecting the fact that your ability may have
+              changed while you were away.
+            </p>
+            <p className="text-sm text-zinc-400 leading-relaxed mt-2">
+              A rating marked &ldquo;provisional&rdquo; means the RD is still above 150,
+              so the estimate is rough. After a few rounds, your RD drops and the
+              rating stabilises.
+            </p>
+            <p className="text-sm text-zinc-400 leading-relaxed mt-2">
+              Ratings become publicly visible after Season 1. You can view them
+              on the Leaderboard under the &ldquo;Ratings&rdquo; tab.
+            </p>
+          </div>
         </section>
 
         <section className="flex flex-col gap-3">

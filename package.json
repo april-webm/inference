@@ -13,7 +13,9 @@
     "@supabase/supabase-js": "^2.105.1",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
+    "bcryptjs": "^3.0.3",
     "geist": "^1.7.0",
+    "jose": "^6.2.3",
     "katex": "^0.16.45",
     "next": "16.2.4",
     "obscenity": "^0.4.6",
@@ -22,7 +24,8 @@
     "react-markdown": "^10.1.0",
     "rehype-katex": "^7.0.1",
     "remark-gfm": "^4.0.1",
-    "remark-math": "^6.0.0"
+    "remark-math": "^6.0.0",
+    "resend": "^6.12.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

@@ -34,6 +34,21 @@ function formatInstrument(key: string): string {
   return `${type === 'call' ? 'Call' : 'Put'} $${Number(strike).toLocaleString()}`
 }
 
+// Compute changed keys between two flat objects
+function diffKeys(
+  oldObj: Record<string, unknown> | null | undefined,
+  newObj: Record<string, unknown>
+): Set<string> {
+  const changed = new Set<string>()
+  if (!oldObj) return new Set(Object.keys(newObj))
+  for (const key of new Set([...Object.keys(oldObj), ...Object.keys(newObj)])) {
+    if (JSON.stringify(oldObj[key]) !== JSON.stringify(newObj[key])) {
+      changed.add(key)
+    }
+  }
+  return changed
+}
+
 export function SubmissionForm({
   roundId,
   roundNumber,
@@ -46,8 +61,9 @@ export function SubmissionForm({
   const noneLeft = submissionsRemaining <= 0
 
   const [reasoning, setReasoning] = useState(existingReasoning ?? '')
-  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+  const [status, setStatus] = useState<'idle' | 'confirming' | 'loading' | 'success' | 'error'>('idle')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [pendingAnswer, setPendingAnswer] = useState<string | null>(null)
 
   // Round-specific state
   const [r1Stakes, setR1Stakes] = useState<Record<string, string>>(() => {
@@ -123,7 +139,7 @@ export function SubmissionForm({
     return rawJson
   }
 
-  async function onSubmit(e: React.FormEvent) {
+  function handlePreSubmit(e: React.FormEvent) {
     e.preventDefault()
     setErrorMessage(null)
 
@@ -134,13 +150,18 @@ export function SubmissionForm({
     }
 
     const answerText = buildAnswer()
+    setPendingAnswer(answerText)
+    setStatus('confirming')
+  }
 
+  async function handleConfirm() {
+    if (!pendingAnswer) return
     setStatus('loading')
     try {
       const res = await fetch('/api/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ roundId, answer: answerText, reasoning }),
+        body: JSON.stringify({ roundId, answer: pendingAnswer, reasoning }),
       })
 
       if (res.status === 429) {
@@ -162,7 +183,62 @@ export function SubmissionForm({
     }
   }
 
+  function handleCancel() {
+    setPendingAnswer(null)
+    setStatus('idle')
+  }
+
   const hasExisting = existingAnswer != null
+
+  // Confirmation screen
+  if (status === 'confirming' && pendingAnswer) {
+    const newAnswer = JSON.parse(pendingAnswer) as Record<string, unknown>
+
+    return (
+      <div className="flex flex-col gap-4 border border-zinc-700 bg-zinc-900/50 rounded-lg p-5">
+        <h2 className="text-sm font-medium text-zinc-100">
+          {hasExisting ? 'Confirm changes' : 'Confirm submission'}
+        </h2>
+
+        {hasExisting ? (
+          <>
+            <p className="text-xs text-zinc-500">
+              This will use 1 of your {submissionsRemaining} remaining submissions.
+              Review your changes below.
+            </p>
+            <AnswerDiff
+              oldAnswer={existingAnswer}
+              newAnswer={newAnswer}
+              roundNumber={roundNumber}
+            />
+            {existingReasoning !== reasoning && (
+              <div className="flex flex-col gap-1">
+                <p className="text-xs font-medium text-zinc-400">Reasoning changed</p>
+                <div className="text-xs bg-zinc-950 border border-zinc-800 rounded p-3 max-h-32 overflow-y-auto">
+                  <p className="text-red-400/70 line-through whitespace-pre-wrap">{existingReasoning}</p>
+                  <p className="text-emerald-400/90 whitespace-pre-wrap mt-2">{reasoning}</p>
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <p className="text-xs text-zinc-500">
+            This will use 1 of your {submissionsRemaining} remaining submissions.
+          </p>
+        )}
+
+        <div className="flex gap-2">
+          <Button onClick={handleConfirm}>
+            {hasExisting ? 'Confirm update' : 'Confirm submission'}
+          </Button>
+          <Button variant="secondary" onClick={handleCancel}>
+            Cancel
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
   const buttonLabel = status === 'loading'
     ? 'Submitting...'
     : hasExisting
@@ -170,7 +246,7 @@ export function SubmissionForm({
     : 'Submit answer'
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-6">
+    <form onSubmit={handlePreSubmit} className="flex flex-col gap-6">
       <h2 className="text-sm font-medium text-zinc-100">Your answer</h2>
 
       {/* Round 1: horse stakes */}
@@ -319,5 +395,85 @@ export function SubmissionForm({
         <p className="text-xs text-red-400">{errorMessage}</p>
       )}
     </form>
+  )
+}
+
+// Diff component: shows changed fields between old and new answers
+function AnswerDiff({
+  oldAnswer,
+  newAnswer,
+  roundNumber,
+}: {
+  oldAnswer: Record<string, unknown> | null | undefined
+  newAnswer: Record<string, unknown>
+  roundNumber: number
+}) {
+  // For round 2, flatten strategy array for diffing
+  if (roundNumber === 2) {
+    const oldStrategy = (oldAnswer as { strategy?: { signal: number; bid: number; ask: number }[] } | null)?.strategy ?? []
+    const newStrategy = (newAnswer as { strategy?: { signal: number; bid: number; ask: number }[] })?.strategy ?? []
+
+    const changedRows: number[] = []
+    for (let i = 0; i < Math.max(oldStrategy.length, newStrategy.length); i++) {
+      const o = oldStrategy[i]
+      const n = newStrategy[i]
+      if (!o || !n || o.bid !== n.bid || o.ask !== n.ask) {
+        changedRows.push(i)
+      }
+    }
+
+    if (changedRows.length === 0) {
+      return <p className="text-xs text-zinc-500">No changes to answer.</p>
+    }
+
+    return (
+      <div className="flex flex-col gap-1">
+        <p className="text-xs font-medium text-zinc-400">
+          Answer changes ({changedRows.length} signal{changedRows.length !== 1 ? 's' : ''} modified)
+        </p>
+        <div className="text-xs bg-zinc-950 border border-zinc-800 rounded p-3 max-h-48 overflow-y-auto font-mono">
+          {changedRows.map((i) => {
+            const o = oldStrategy[i]
+            const n = newStrategy[i]
+            const signal = n?.signal ?? o?.signal ?? i * 50
+            return (
+              <div key={i} className="flex gap-4 py-0.5">
+                <span className="text-zinc-500 w-16">sig {signal}</span>
+                <span className="text-red-400/70">bid {o?.bid ?? 0} ask {o?.ask ?? 0}</span>
+                <span className="text-zinc-600">→</span>
+                <span className="text-emerald-400/90">bid {n?.bid ?? 0} ask {n?.ask ?? 0}</span>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
+
+  // For rounds 1, 3, and fallback: flat key-value diff
+  const changed = diffKeys(oldAnswer, newAnswer)
+
+  if (changed.size === 0) {
+    return <p className="text-xs text-zinc-500">No changes to answer.</p>
+  }
+
+  const formatKey = roundNumber === 3 ? formatInstrument : (k: string) => k
+
+  return (
+    <div className="flex flex-col gap-1">
+      <p className="text-xs font-medium text-zinc-400">
+        Answer changes ({changed.size} field{changed.size !== 1 ? 's' : ''} modified)
+      </p>
+      <div className="text-xs bg-zinc-950 border border-zinc-800 rounded p-3 max-h-48 overflow-y-auto font-mono">
+        {[...changed].map((key) => (
+          <div key={key} className="flex gap-4 py-0.5">
+            <span className="text-zinc-500 w-32 shrink-0">{formatKey(key)}</span>
+            <span className="text-red-400/70">{JSON.stringify(oldAnswer?.[key] ?? 0)}</span>
+            <span className="text-zinc-600">→</span>
+            <span className="text-emerald-400/90">{JSON.stringify(newAnswer[key])}</span>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
