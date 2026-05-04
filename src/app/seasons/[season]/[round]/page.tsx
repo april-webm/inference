@@ -97,14 +97,21 @@ export default async function SeasonRoundDetail({
         .eq('round_id', roundMeta.id).eq('user_id', user.id)
     : Promise.resolve({ count: 0 })
 
-  const [descResult, subResult, attemptsResult] = await Promise.all([
-    descriptionPromise, subPromise, attemptsPromise,
+  const submissionCountPromise = isOpen
+    ? supabase.from('submissions')
+        .select('id', { count: 'exact', head: true })
+        .eq('round_id', roundMeta.id)
+    : Promise.resolve({ count: null })
+
+  const [descResult, subResult, attemptsResult, countResult] = await Promise.all([
+    descriptionPromise, subPromise, attemptsPromise, submissionCountPromise,
   ])
 
   const description = descResult.data?.description ?? ''
   const writeup = isClosed ? (descResult.data?.writeup ?? null) : null
   const existing = subResult.data ?? null
   const submissionsRemaining = Math.max(0, 3 - ((attemptsResult as { count: number | null }).count ?? 0))
+  const submissionCount = (countResult as { count: number | null }).count
 
   return (
     <div className="min-h-screen">
@@ -127,6 +134,9 @@ export default async function SeasonRoundDetail({
             {isUpcoming && <Countdown target={roundMeta.opens_at} label="Opens in" compact />}
             {isOpen && <Countdown target={roundMeta.closes_at} label="Closes in" compact />}
             {isClosed && <span>Closed {formatDate(roundMeta.closes_at)}</span>}
+            {isOpen && submissionCount != null && (
+              <span className="text-zinc-500">{submissionCount} submission{submissionCount !== 1 ? 's' : ''} so far</span>
+            )}
           </div>
         </div>
 

@@ -4,12 +4,14 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+import { COUNTRIES } from '@/lib/countries'
 
 export default function SignupPage() {
   const router = useRouter()
   const [displayName, setDisplayName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [countryCode, setCountryCode] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -28,7 +30,7 @@ export default function SignupPage() {
       res = await fetch('/api/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, displayName }),
+        body: JSON.stringify({ email, password, displayName, countryCode: countryCode || undefined }),
       })
     } catch {
       setLoading(false)
@@ -58,6 +60,20 @@ export default function SignupPage() {
         maxLength={40}
         required
       />
+      <div className="flex flex-col gap-1">
+        <label htmlFor="country" className="text-xs text-zinc-400">Country (optional)</label>
+        <select
+          id="country"
+          value={countryCode}
+          onChange={(e) => setCountryCode(e.target.value)}
+          className="rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-amber-400"
+        >
+          <option value="">Select a country</option>
+          {COUNTRIES.map((c) => (
+            <option key={c.code} value={c.code}>{c.name}</option>
+          ))}
+        </select>
+      </div>
       <Input
         id="email"
         label="Email"

@@ -13,6 +13,7 @@ export interface Profile {
   id: string
   display_name: string
   university_email: boolean
+  country_code: string | null
   created_at: string
 }
 
@@ -68,6 +69,7 @@ export interface LeaderboardRow {
   score: number
   display_name: string
   university_email: boolean
+  country_code: string | null
   computed_at: string
 }
 
@@ -78,7 +80,26 @@ export interface SeasonLeaderboardRow {
   user_id: string
   display_name: string
   university_email: boolean
+  country_code: string | null
   total_score: number
   rounds_played: number
   rank: number
+}
+
+export interface Rating {
+  user_id: string
+  rating: number
+  rd: number
+  volatility: number
+  updated_at: string
+}
+
+export interface RatingHistory {
+  id: string
+  user_id: string
+  round_id: string
+  rating: number
+  rd: number
+  volatility: number
+  computed_at: string
 }

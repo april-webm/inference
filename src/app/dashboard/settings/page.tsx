@@ -1,9 +1,26 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+import { COUNTRIES } from '@/lib/countries'
+
+const WEBHOOK_EVENTS = [
+  'season_open',
+  'round_open',
+  'round_24h_warning',
+  'round_close',
+  'scores_posted',
+] as const
+
+type Webhook = {
+  id: string
+  url: string
+  events: string[]
+  enabled: boolean
+  created_at: string
+}
 
 export default function SettingsPage() {
   const supabase = createSupabaseBrowserClient()
@@ -14,23 +31,44 @@ export default function SettingsPage() {
   const [nameStatus, setNameStatus] = useState<string | null>(null)
   const [emailStatus, setEmailStatus] = useState<string | null>(null)
   const [pwStatus, setPwStatus] = useState<string | null>(null)
+  const [countryCode, setCountryCode] = useState('')
+  const [countryStatus, setCountryStatus] = useState<string | null>(null)
   const [emailOptOut, setEmailOptOut] = useState(false)
   const [emailPrefStatus, setEmailPrefStatus] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+
+  // Webhooks state
+  const [webhooks, setWebhooks] = useState<Webhook[]>([])
+  const [webhookUrl, setWebhookUrl] = useState('')
+  const [webhookEvents, setWebhookEvents] = useState<string[]>([...WEBHOOK_EVENTS])
+  const [webhookStatus, setWebhookStatus] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+
+  const fetchWebhooks = useCallback(async () => {
+    const res = await fetch('/api/webhooks')
+    if (res.ok) {
+      const { webhooks: wh } = await res.json()
+      setWebhooks(wh)
+    }
+  }, [])
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) {
         setEmail(data.user.email ?? '')
         setDisplayName(data.user.user_metadata?.display_name ?? '')
-        // Fetch email opt-out preference
-        supabase.from('profiles').select('email_opt_out').eq('id', data.user.id).single()
+        // Fetch profile preferences
+        supabase.from('profiles').select('email_opt_out, country_code').eq('id', data.user.id).single()
           .then(({ data: profile }) => {
-            if (profile) setEmailOptOut(profile.email_opt_out ?? false)
+            if (profile) {
+              setEmailOptOut(profile.email_opt_out ?? false)
+              setCountryCode(profile.country_code ?? '')
+            }
           })
       }
       setLoading(false)
     })
+    fetchWebhooks()
   }, [])
 
   async function updateName(e: React.FormEvent) {
@@ -64,6 +102,48 @@ export default function SettingsPage() {
       return
     }
     setEmailStatus('Confirmation email sent to your new address.')
+  }
+
+  async function addWebhook(e: React.FormEvent) {
+    e.preventDefault()
+    setWebhookStatus(null)
+    if (!webhookUrl.startsWith('https://')) {
+      setWebhookStatus('URL must start with https://')
+      return
+    }
+    if (webhookEvents.length === 0) {
+      setWebhookStatus('Select at least one event.')
+      return
+    }
+    const res = await fetch('/api/webhooks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: webhookUrl, events: webhookEvents }),
+    })
+    if (!res.ok) {
+      const { error } = await res.json()
+      setWebhookStatus(error || 'Failed to add webhook.')
+      return
+    }
+    setWebhookUrl('')
+    setWebhookEvents([...WEBHOOK_EVENTS])
+    setWebhookStatus('Webhook added.')
+    fetchWebhooks()
+  }
+
+  async function toggleWebhook(id: string, enabled: boolean) {
+    await fetch(`/api/webhooks/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled }),
+    })
+    fetchWebhooks()
+  }
+
+  async function deleteWebhook(id: string) {
+    await fetch(`/api/webhooks/${id}`, { method: 'DELETE' })
+    setDeletingId(null)
+    fetchWebhooks()
   }
 
   async function updatePassword(e: React.FormEvent) {
@@ -116,6 +196,35 @@ export default function SettingsPage() {
           )}
         </div>
       </form>
+
+      <hr className="border-zinc-800" />
+
+      {/* Country */}
+      <div className="flex flex-col gap-3">
+        <h2 className="text-sm font-medium text-zinc-400">Country</h2>
+        <select
+          value={countryCode}
+          onChange={async (e) => {
+            const code = e.target.value
+            setCountryCode(code)
+            setCountryStatus(null)
+            const { data: { user: u } } = await supabase.auth.getUser()
+            if (u) {
+              await supabase.from('profiles').update({ country_code: code || null }).eq('id', u.id)
+              setCountryStatus('Updated.')
+            }
+          }}
+          className="rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-amber-400"
+        >
+          <option value="">No country selected</option>
+          {COUNTRIES.map((c) => (
+            <option key={c.code} value={c.code}>{c.name}</option>
+          ))}
+        </select>
+        {countryStatus && (
+          <p className="text-xs text-emerald-400">{countryStatus}</p>
+        )}
+      </div>
 
       <hr className="border-zinc-800" />
 
@@ -198,6 +307,97 @@ export default function SettingsPage() {
         {emailPrefStatus && (
           <p className="text-xs text-emerald-400">{emailPrefStatus}</p>
         )}
+      </div>
+
+      <hr className="border-zinc-800" />
+
+      {/* Webhooks */}
+      <div className="flex flex-col gap-4">
+        <h2 className="text-sm font-medium text-zinc-400">Webhooks</h2>
+        <p className="text-xs text-zinc-500">
+          Receive Discord/webhook notifications for competition events.
+        </p>
+
+        {webhooks.length > 0 && (
+          <div className="flex flex-col gap-3">
+            {webhooks.map((wh) => (
+              <div key={wh.id} className="flex items-center justify-between gap-3 rounded border border-zinc-800 p-3">
+                <div className="flex flex-col gap-1 min-w-0">
+                  <span className="text-sm text-zinc-200 truncate" title={wh.url}>
+                    {wh.url.length > 50 ? wh.url.slice(0, 50) + '...' : wh.url}
+                  </span>
+                  <div className="flex flex-wrap gap-1">
+                    {wh.events.map((ev) => (
+                      <span key={ev} className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">
+                        {ev}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => toggleWebhook(wh.id, !wh.enabled)}
+                    className={`text-xs px-2 py-1 rounded ${wh.enabled ? 'bg-emerald-900/50 text-emerald-400' : 'bg-zinc-800 text-zinc-500'}`}
+                  >
+                    {wh.enabled ? 'On' : 'Off'}
+                  </button>
+                  {deletingId === wh.id ? (
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => deleteWebhook(wh.id)} className="text-xs text-red-400 hover:text-red-300">
+                        Confirm
+                      </button>
+                      <button onClick={() => setDeletingId(null)} className="text-xs text-zinc-500 hover:text-zinc-300">
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button onClick={() => setDeletingId(wh.id)} className="text-xs text-zinc-500 hover:text-red-400">
+                      Delete
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <form onSubmit={addWebhook} className="flex flex-col gap-3 mt-2">
+          <Input
+            id="webhook_url"
+            label="Webhook URL"
+            type="url"
+            value={webhookUrl}
+            onChange={(e) => setWebhookUrl(e.target.value)}
+            placeholder="https://discord.com/api/webhooks/..."
+          />
+          <div className="flex flex-wrap gap-2">
+            {WEBHOOK_EVENTS.map((ev) => (
+              <label key={ev} className="flex items-center gap-1.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={webhookEvents.includes(ev)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setWebhookEvents([...webhookEvents, ev])
+                    } else {
+                      setWebhookEvents(webhookEvents.filter((x) => x !== ev))
+                    }
+                  }}
+                  className="w-3.5 h-3.5 rounded border-zinc-600 bg-zinc-900 text-amber-400 focus:ring-amber-400"
+                />
+                <span className="text-xs text-zinc-400">{ev}</span>
+              </label>
+            ))}
+          </div>
+          <div className="flex items-center gap-3">
+            <Button type="submit">Add webhook</Button>
+            {webhookStatus && (
+              <p className={`text-xs ${webhookStatus === 'Webhook added.' ? 'text-emerald-400' : 'text-red-400'}`}>
+                {webhookStatus}
+              </p>
+            )}
+          </div>
+        </form>
       </div>
 
       <hr className="border-zinc-800" />

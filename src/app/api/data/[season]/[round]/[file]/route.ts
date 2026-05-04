@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createSupabaseServiceClient } from '@/lib/supabase/server'
+import { createSupabaseServiceClient, createSupabaseServerClient } from '@/lib/supabase/server'
 
 const ALLOWED_FILES: Record<string, Record<string, string[]>> = {
   '0': {
@@ -40,10 +40,10 @@ export async function GET(
 
   const { data: roundData } = await service
     .from('rounds')
-    .select('opens_at')
+    .select('id, opens_at')
     .eq('season_id', seasonData.id)
     .eq('number', parseInt(round))
-    .single<{ opens_at: string }>()
+    .single<{ id: string; opens_at: string }>()
 
   if (!roundData) {
     return NextResponse.json({ error: 'Not found.' }, { status: 404 })
@@ -64,6 +64,18 @@ export async function GET(
   }
 
   const buffer = Buffer.from(await data.arrayBuffer())
+
+  // Track download (fire and forget — don't block the response)
+  createSupabaseServerClient().then(async (userClient) => {
+    const { data: { user } } = await userClient.auth.getUser()
+    if (user) {
+      service.from('downloads').insert({
+        user_id: user.id,
+        round_id: roundData.id,
+        file_name: file,
+      }).then(() => {})
+    }
+  }).catch(() => {})
 
   return new NextResponse(buffer, {
     headers: {
