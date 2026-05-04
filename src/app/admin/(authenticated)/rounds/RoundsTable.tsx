@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Input } from '@/components/ui/Input'
@@ -31,9 +31,11 @@ export function RoundsTable({
   seasonNumber?: number
 }) {
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [statsId, setStatsId] = useState<string | null>(null)
   const now = Date.now()
 
   const editingRound = rounds.find((r) => r.id === editingId) ?? null
+  const statsRound = rounds.find((r) => r.id === statsId) ?? null
 
   return (
     <>
@@ -94,6 +96,13 @@ export function RoundsTable({
                       >
                         {editingId === r.id ? 'Close' : 'Edit'}
                       </Button>
+                      <Button
+                        variant="secondary"
+                        className="text-xs px-2 py-1"
+                        onClick={() => setStatsId(statsId === r.id ? null : r.id)}
+                      >
+                        {statsId === r.id ? 'Hide Stats' : 'Stats'}
+                      </Button>
                       {status === 'closed' && (
                         <Link
                           href={`/admin/rounds/${r.id}`}
@@ -122,7 +131,129 @@ export function RoundsTable({
           />
         </div>
       )}
+
+      {statsRound && (
+        <div className="mt-4">
+          <StatsPanel
+            key={`stats-${statsRound.id}`}
+            round={statsRound}
+            onClose={() => setStatsId(null)}
+          />
+        </div>
+      )}
     </>
+  )
+}
+
+interface RoundStats {
+  submissionCount: number
+  uniqueDownloaders: number
+  resubmitters: number
+  avgUpdates: number
+  reasoningStats: { min: number; avg: number; max: number }
+  timelineBuckets: { date: string; count: number }[]
+}
+
+function StatsPanel({ round, onClose }: { round: Round; onClose: () => void }) {
+  const [stats, setStats] = useState<RoundStats | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    setLoading(true)
+    setError(null)
+    fetch(`/api/admin/rounds/${round.id}/stats`)
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to load stats')
+        return res.json()
+      })
+      .then((data) => setStats(data))
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false))
+  }, [round.id])
+
+  const maxCount = stats
+    ? Math.max(...stats.timelineBuckets.map((b) => b.count), 1)
+    : 1
+
+  return (
+    <div className="border border-zinc-700 rounded-lg p-5 bg-zinc-900/50">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-medium text-zinc-100">
+          Stats — Round #{round.number}: {round.title}
+        </h3>
+        <Button variant="secondary" className="text-xs px-2 py-1" onClick={onClose}>
+          Close
+        </Button>
+      </div>
+
+      {loading && <p className="text-sm text-zinc-500">Loading stats...</p>}
+      {error && <p className="text-sm text-red-400">{error}</p>}
+
+      {stats && (
+        <div className="space-y-5">
+          {/* Summary metrics */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <StatBox label="Submissions" value={stats.submissionCount} />
+            <StatBox label="Unique downloaders" value={stats.uniqueDownloaders} />
+            <StatBox label="Resubmitters" value={stats.resubmitters} />
+            <StatBox label="Avg attempts/user" value={stats.avgUpdates} />
+          </div>
+
+          {/* Reasoning length stats */}
+          <div>
+            <h4 className="text-xs font-medium text-zinc-400 mb-2">Reasoning length (chars)</h4>
+            <div className="grid grid-cols-3 gap-4">
+              <StatBox label="Min" value={stats.reasoningStats.min.toLocaleString()} />
+              <StatBox label="Avg" value={stats.reasoningStats.avg.toLocaleString()} />
+              <StatBox label="Max" value={stats.reasoningStats.max.toLocaleString()} />
+            </div>
+          </div>
+
+          {/* Submission timeline */}
+          {stats.timelineBuckets.length > 0 && (
+            <div>
+              <h4 className="text-xs font-medium text-zinc-400 mb-2">Submissions per day</h4>
+              <div className="flex items-end gap-px h-28">
+                {stats.timelineBuckets.map((bucket) => (
+                  <div
+                    key={bucket.date}
+                    className="flex-1 flex flex-col items-center justify-end h-full group relative"
+                  >
+                    <div
+                      className="w-full bg-amber-400/80 rounded-t transition-all min-h-[2px]"
+                      style={{
+                        height: `${(bucket.count / maxCount) * 100}%`,
+                      }}
+                    />
+                    <div className="absolute bottom-full mb-1 hidden group-hover:block bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-100 whitespace-nowrap z-10">
+                      {bucket.date}: {bucket.count}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-between mt-1">
+                <span className="text-[10px] text-zinc-500">
+                  {stats.timelineBuckets[0].date}
+                </span>
+                <span className="text-[10px] text-zinc-500">
+                  {stats.timelineBuckets[stats.timelineBuckets.length - 1].date}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function StatBox({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="bg-zinc-800/50 rounded px-3 py-2">
+      <p className="text-[11px] text-zinc-500">{label}</p>
+      <p className="text-sm font-medium text-zinc-100">{value}</p>
+    </div>
   )
 }
 
