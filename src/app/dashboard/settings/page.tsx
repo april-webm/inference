@@ -43,6 +43,8 @@ export default function SettingsPage() {
   const [webhookEvents, setWebhookEvents] = useState<string[]>([...WEBHOOK_EVENTS])
   const [webhookStatus, setWebhookStatus] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [testingId, setTestingId] = useState<string | null>(null)
+  const [testResult, setTestResult] = useState<{ id: string; ok: boolean; msg: string } | null>(null)
 
   const fetchWebhooks = useCallback(async () => {
     const res = await fetch('/api/webhooks')
@@ -129,6 +131,19 @@ export default function SettingsPage() {
     setWebhookEvents([...WEBHOOK_EVENTS])
     setWebhookStatus('Webhook added.')
     fetchWebhooks()
+  }
+
+  async function testWebhook(id: string) {
+    setTestingId(id)
+    setTestResult(null)
+    const res = await fetch('/api/webhooks/test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ webhookId: id }),
+    })
+    const data = await res.json()
+    setTestingId(null)
+    setTestResult({ id, ok: res.ok, msg: res.ok ? 'Sent!' : (data.error || 'Failed.') })
   }
 
   async function toggleWebhook(id: string, enabled: boolean) {
@@ -334,7 +349,19 @@ export default function SettingsPage() {
                     ))}
                   </div>
                 </div>
+                {testResult?.id === wh.id && (
+                  <p className={`text-xs mt-1 ${testResult.ok ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {testResult.msg}
+                  </p>
+                )}
                 <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => testWebhook(wh.id)}
+                    disabled={testingId === wh.id}
+                    className="text-xs px-2 py-1 rounded bg-zinc-800 text-zinc-300 hover:bg-zinc-700 disabled:opacity-50"
+                  >
+                    {testingId === wh.id ? 'Sending...' : 'Test'}
+                  </button>
                   <button
                     onClick={() => toggleWebhook(wh.id, !wh.enabled)}
                     className={`text-xs px-2 py-1 rounded ${wh.enabled ? 'bg-emerald-900/50 text-emerald-400' : 'bg-zinc-800 text-zinc-500'}`}
