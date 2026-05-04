@@ -16,19 +16,31 @@ export default function AdminEmailsPage() {
     setSending(true)
     setResult(null)
 
-    const res = await fetch('/api/admin/email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        subject,
-        body,
-        testEmail: test ? testEmail : undefined,
-      }),
-    })
+    try {
+      const res = await fetch('/api/admin/email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subject,
+          body,
+          testEmail: test ? testEmail : undefined,
+        }),
+      })
 
-    const data = await res.json()
-    setSending(false)
-    setResult(res.ok ? `Sent to ${data.count} recipient(s).` : `Error: ${data.error}`)
+      const text = await res.text()
+      let data: { count?: number; error?: string }
+      try {
+        data = JSON.parse(text)
+      } catch {
+        data = { error: `Server returned: ${text.slice(0, 200)}` }
+      }
+
+      setSending(false)
+      setResult(res.ok ? `Sent to ${data.count} recipient(s).` : `Error: ${data.error || res.statusText}`)
+    } catch (err) {
+      setSending(false)
+      setResult(`Error: ${err instanceof Error ? err.message : 'Network error'}`)
+    }
   }
 
   return (
