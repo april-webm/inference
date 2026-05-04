@@ -3,6 +3,9 @@ import { Resend } from 'resend'
 import { verifyAdminSession } from '@/lib/admin-session'
 import { createSupabaseServiceClient } from '@/lib/supabase/server'
 
+// Vercel function can run longer for this endpoint
+export const maxDuration = 300 // 5 minutes
+
 export async function POST(request: Request) {
   const isAdmin = await verifyAdminSession()
   if (!isAdmin) {
@@ -39,7 +42,6 @@ export async function POST(request: Request) {
   // Production: send to all opted-in, confirmed users
   const supabase = createSupabaseServiceClient()
 
-  // Get opted-out user IDs
   const { data: optedOut } = await supabase
     .from('profiles')
     .select('id')
@@ -47,7 +49,6 @@ export async function POST(request: Request) {
 
   const optedOutIds = new Set((optedOut ?? []).map((p) => p.id))
 
-  // Paginate auth users, filter confirmed + not opted out
   const eligibleEmails: string[] = []
   let page = 1
   const perPage = 1000
@@ -70,23 +71,35 @@ export async function POST(request: Request) {
     page++
   }
 
+  // Send in batches of 50 using Resend batch API
+  const BATCH_SIZE = 50
   let sent = 0
   const errors: string[] = []
 
-  for (const email of eligibleEmails) {
-    const { error } = await resend.emails.send({
+  for (let i = 0; i < eligibleEmails.length; i += BATCH_SIZE) {
+    const batch = eligibleEmails.slice(i, i + BATCH_SIZE)
+    const messages = batch.map((email) => ({
       from,
       to: email,
       subject,
       html: body,
-    })
-    if (error) {
-      errors.push(`${email}: ${error.message}`)
-    } else {
-      sent++
+    }))
+
+    try {
+      const { data, error } = await resend.batch.send(messages)
+      if (error) {
+        errors.push(`Batch ${Math.floor(i / BATCH_SIZE) + 1}: ${error.message}`)
+      } else {
+        sent += data?.data?.length ?? batch.length
+      }
+    } catch (err) {
+      errors.push(`Batch ${Math.floor(i / BATCH_SIZE) + 1}: ${err instanceof Error ? err.message : 'unknown'}`)
     }
-    // Rate limit: 150ms between sends
-    await new Promise((r) => setTimeout(r, 150))
+
+    // Brief pause between batches
+    if (i + BATCH_SIZE < eligibleEmails.length) {
+      await new Promise((r) => setTimeout(r, 1000))
+    }
   }
 
   return NextResponse.json({
