@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { createSupabaseServerClient, createSupabaseServiceClient } from '@/lib/supabase/server'
 import { Badge } from '@/components/ui/Badge'
 import { Markdown } from '@/components/Markdown'
 import { PublicNav } from '@/components/PublicNav'
@@ -92,8 +92,9 @@ export default async function SeasonRoundDetail({
     : Promise.resolve({ data: null })
 
 
+  const service = createSupabaseServiceClient()
   const submissionCountPromise = isOpen
-    ? supabase.from('submissions')
+    ? service.from('submissions')
         .select('id', { count: 'exact', head: true })
         .eq('round_id', roundMeta.id)
     : Promise.resolve({ count: null })
