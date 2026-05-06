@@ -41,7 +41,7 @@ export default function AboutPage() {
             <li>Submissions need an answer in the format the problem asks for and at least 50 characters of reasoning.</li>
             <li>Talking through a problem with friends is fine. Submitting the same answer and reasoning as someone else is not.</li>
             <li>Using an LLM is allowed but discouraged. The point of this is to learn something, and the way you learn is by working through it yourself.</li>
-            <li>Ties are broken by earliest submission. If you and someone else end up on the same score, whoever locked it in first ranks higher.</li>
+            <li>Tied scores share the same rank. If two people end up on the same score, they both get that position.</li>
             <li>Be civil. Display names that are abusive will be hidden from the leaderboard.</li>
           </ul>
         </section>
