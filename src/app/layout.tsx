@@ -15,8 +15,27 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Inference',
-  description: 'Three problems. Three weeks.',
+  title: {
+    default: 'Inference',
+    template: '%s — Inference',
+  },
+  description: 'A quantitative reasoning competition. Three problems per season — probability, trading, and statistics. Submit answers, see how you rank.',
+  metadataBase: new URL('https://inferenc.me'),
+  openGraph: {
+    type: 'website',
+    url: 'https://inferenc.me',
+    siteName: 'Inference',
+    title: 'Inference',
+    description: 'A quantitative reasoning competition. Three problems per season — probability, trading, and statistics. Submit answers, see how you rank.',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Inference',
+    description: 'A quantitative reasoning competition. Three problems per season — probability, trading, and statistics. Submit answers, see how you rank.',
+  },
+  verification: {
+    google: 'mCKK63kLNwsd3aO0vqmmwACjVJ1-0SzU3GNcFOhndb0',
+  },
   icons: {
     icon: '/favicon.svg',
   },

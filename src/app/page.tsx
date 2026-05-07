@@ -1,8 +1,22 @@
+import type { Metadata } from 'next'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { Badge } from '@/components/ui/Badge'
 import { Countdown } from '@/components/Countdown'
 import { PublicNav } from '@/components/PublicNav'
 import type { Round, Season } from '@/types/database'
+
+export const metadata: Metadata = {
+  title: 'Inference',
+  description: 'A quantitative reasoning competition. Three problems per season — probability, trading, and statistics. No code required.',
+  openGraph: {
+    title: 'Inference',
+    description: 'A quantitative reasoning competition. Three problems per season — probability, trading, and statistics. No code required.',
+    url: 'https://inferenc.me',
+  },
+  alternates: {
+    canonical: 'https://inferenc.me',
+  },
+}
 
 export const dynamic = 'force-dynamic'
 
