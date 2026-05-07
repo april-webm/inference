@@ -82,9 +82,17 @@ export default async function LeaderboardPage({
     return `/leaderboard?${p.toString()}`
   }
 
-  // Ratings data (fetched if ratings view is active)
+  // Check if the season has fully closed (all rounds past closes_at)
+  const { data: seasonRounds } = await supabase
+    .from('rounds')
+    .select('closes_at')
+    .eq('season_id', selectedSeason.id)
+  const seasonClosed = (seasonRounds ?? []).length > 0 &&
+    (seasonRounds ?? []).every((r) => new Date(r.closes_at).getTime() < Date.now())
+
+  // Ratings data (fetched if ratings view is active and season is closed)
   let ratingRows: { rank: number; display_name: string; user_id: string; rating: number; rd: number; provisional: boolean; country_code: string | null }[] = []
-  if (isRatingsView) {
+  if (isRatingsView && seasonClosed) {
     const { data: ratings } = await supabase
       .from('ratings')
       .select('user_id, rating, rd, volatility, updated_at')
@@ -288,12 +296,16 @@ export default async function LeaderboardPage({
 
         {/* Ratings view */}
         {isRatingsView ? (
-          ratingRows.length === 0 ? (
+          !seasonClosed ? (
             <div className="border border-zinc-800 bg-zinc-900 rounded-lg p-6 text-center">
               <p className="text-sm text-zinc-400">
-                {searchQuery
-                  ? `No results for "${params.q}".`
-                  : 'No ratings computed yet.'}
+                Ratings are published after the season ends.
+              </p>
+            </div>
+          ) : ratingRows.length === 0 ? (
+            <div className="border border-zinc-800 bg-zinc-900 rounded-lg p-6 text-center">
+              <p className="text-sm text-zinc-400">
+                {searchQuery ? `No results for "${params.q}".` : 'No ratings computed yet.'}
               </p>
             </div>
           ) : (
