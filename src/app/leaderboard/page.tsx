@@ -381,7 +381,7 @@ export default async function LeaderboardPage({
                   </thead>
                   <tbody>
                     {rows.map((row, i) => {
-                      const badge = !isRoundView ? badgeSrc(row.rank) : null
+                      const badge = !isRoundView && seasonClosed ? badgeSrc(row.rank) : null
                       return (
                         <tr key={`${row.user_id}-${i}`} className={`border-t border-zinc-800 ${rankBorder(row.rank)}`}>
                           <td className="text-right font-mono py-2 px-4 text-zinc-300">
