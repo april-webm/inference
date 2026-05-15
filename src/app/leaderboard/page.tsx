@@ -30,7 +30,7 @@ function badgeSrc(rank: number): string | null {
 export default async function LeaderboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ season?: string; round?: string; q?: string; view?: string }>
+  searchParams: Promise<{ season?: string; round?: string; q?: string; view?: string; show?: string }>
 }) {
   const params = await searchParams
   const supabase = await createSupabaseServerClient()
@@ -60,6 +60,7 @@ export default async function LeaderboardPage({
   const selectedSeason = seasons.find((s) => s.number === selectedSeasonNum) ?? seasons[0]
   const selectedRound = params.round ? parseInt(params.round) : null
   const searchQuery = params.q?.toLowerCase()
+  const showAll = params.show === 'all'
 
   // Get rounds for this season (for the round picker)
   const { data: rounds } = await supabase
@@ -189,6 +190,12 @@ export default async function LeaderboardPage({
       }))
   }
 
+  // In overall view, default to showing only participants who submitted every scored round
+  const maxRoundsPlayed = Math.max(...rows.map((r) => r.rounds_played ?? 0), 0)
+  if (!selectedRound && !isRatingsView && !showAll && maxRoundsPlayed > 1) {
+    rows = rows.filter((r) => (r.rounds_played ?? 0) >= maxRoundsPlayed)
+  }
+
   // Filter by search
   if (searchQuery) {
     rows = rows.filter((r) =>
@@ -283,14 +290,24 @@ export default async function LeaderboardPage({
 
         {/* Search + info */}
         <div className="flex items-center justify-between">
-          <p className="text-xs text-zinc-500">
-            {isRatingsView
-              ? 'Glicko-2 ratings'
-              : isRoundView
-                ? `Round ${selectedRound} — ${roundTitle}`
-                : `${selectedSeason.name} — combined scores`}
-            {' · '}<a href="/about#scoring" className="text-amber-400 hover:text-amber-300">How scoring works</a>
-          </p>
+          <div className="flex items-center gap-3">
+            <p className="text-xs text-zinc-500">
+              {isRatingsView
+                ? 'Glicko-2 ratings'
+                : isRoundView
+                  ? `Round ${selectedRound} — ${roundTitle}`
+                  : `${selectedSeason.name} — combined scores`}
+              {' · '}<a href="/about#scoring" className="text-amber-400 hover:text-amber-300">How scoring works</a>
+            </p>
+            {!isRoundView && !isRatingsView && maxRoundsPlayed > 1 && (
+              <a
+                href={`/leaderboard?season=${selectedSeasonNum}${showAll ? '' : '&show=all'}${params.q ? `&q=${params.q}` : ''}`}
+                className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+              >
+                {showAll ? 'Show completed only' : 'Show all'}
+              </a>
+            )}
+          </div>
           <LeaderboardSearch />
         </div>
 
